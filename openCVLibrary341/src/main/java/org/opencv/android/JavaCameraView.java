@@ -208,7 +208,9 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                         mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
                         mCamera.setPreviewTexture(mSurfaceTexture);
-                    } else
+                    }
+
+                    else
                        mCamera.setPreviewDisplay(null);
 
                     /* Finally we are ready to start the preview */
