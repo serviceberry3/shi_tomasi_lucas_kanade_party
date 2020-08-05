@@ -167,12 +167,25 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         sceneColor = inputFrame.rgba();
 
-        //convert the color I'm guessing
+        //convert the color image matrix to a grayscale one to improve memory usage and processing time (1 bpp instead of 3)
+        //also converting to grayscale makes the contrast between features clearer
         Imgproc.cvtColor(sceneColor, sceneGrayScale, Imgproc.COLOR_BGRA2GRAY);
 
+        //a matrix of points to store the corner points in when Shi-Tomasi runs
         MatOfPoint corners = new MatOfPoint();
 
-        //run Shi-Tomasi
+        /* run Shi-Tomasi
+        @param sceneGrayScale - our image that we want to detect corners in
+        @param corners is our list of corners found by the algorithm.
+        @param maxCorners is the maximum number of corners we want it to return.
+        @param qualityLevel is the minimum ”quality level” of the results found for the result to be considered a corner.
+        @param minDistance is the minimum distance in pixels required from one corner to the next.
+
+        @param mat a mask in case we want to focus on a certain area of the image.
+        @param blockSize is how big an area, in pixels, the algorithm will use to define corners.
+        @param boolean is whether we're going to use Harris Corner Detection or not. In this example we aren't, we use Shi-Tomasi
+        @param k value, only used in Harris Corner Detection.
+         */
         Imgproc.goodFeaturesToTrack(sceneGrayScale, corners, maxCorners, qualityLevel, minDistance, new Mat(), blockSize, useHarrisDetector, k);
 
         //get array of points from corners (filled in by the algorithm)
