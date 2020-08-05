@@ -23,6 +23,11 @@ import java.util.List;
 public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Callback, Runnable {
     private static final String TAG = "CvViewBase";
 
+    // SurfaceHolder interfaces enable apps to edit and control surfaces.
+    //A SurfaceHolder is an interface the system uses to share ownership of surfaces with apps. Some clients that
+    // work with surfaces want a SurfaceHolder, because APIs to get and set surface parameters are implemented through a
+    // SurfaceHolder. **A SurfaceView contains a SurfaceHolder**.
+    //Most components that interact with a view involve a SurfaceHolder.
     private SurfaceHolder mHolder;
 
     //videocapture is an OpenCV object used to grab camera frames
@@ -33,10 +38,17 @@ public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Ca
 
     public CvViewBase(Context context, VideoCapture camera, Mat color, Mat grayscale) {
         super(context);
+
+        //call SurfaceView.getHolder() to get the SurfaceHolder providing access and control over this SurfaceView's underlying surface.
         mHolder = getHolder();
+
+        //add a Callback interface for this holder (the callback is this class itself since it IMPLEMENTED SHolder.Callback
         mHolder.addCallback(this);
 
+        //our VideoCapture object
         mCamera = camera;
+
+        //the two matrices for image data
         sceneColor = color;
         sceneGrayscale = grayscale;
 
@@ -55,6 +67,7 @@ public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Ca
         if (mCamera!=null) {
             if (mCamera.isOpened()) {
                 Log.d(TAG, "Starting frame processing runnable on background thread");
+
                 //THIS is a runnable, start it on a new thread
                 (new Thread(this)).start();
             }
@@ -157,6 +170,19 @@ public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Ca
 
             if (bmp != null) {
                 //lock canvas from our SurfaceHolder to draw on
+                //Start editing the pixels in the surface. Returned Canvas can be used to draw into the surface's bitmap. null is returned
+                //if surface has not been created or can't be edited. Usually need to implement surfaceCreated()
+                //to find out when the Surface is available for use.
+                //Content of the Surface is never preserved between unlockCanvas() and lockCanvas(), so every pixel within the Surface area
+                //must be written. Only exception to this rule is when a dirty rectangle is specified, in which case, non-dirty
+                //pixels will be preserved
+                //
+                //If you call this repeatedly when Surface not ready (before surfaceCreated/after surfaceDestroyed), calls will be throttled to
+                //slow rate in order to avoid consuming CPU
+                //
+                //If null is not returned, this function internally holds a lock until the corresponding unlockCanvasAndPost(Canvas) call,
+                // preventing SurfaceView from creating, destroying, or modifying surface while being drawn. This can be more convenient
+                //than accessing Surface directly since don't need to do special synchronization with a drawing thread in surfaceDestroyed.
                 Canvas canvas = mHolder.lockCanvas();
 
                 //null check on the canvas. if all good then draw the camera preview bitmap and push to screen

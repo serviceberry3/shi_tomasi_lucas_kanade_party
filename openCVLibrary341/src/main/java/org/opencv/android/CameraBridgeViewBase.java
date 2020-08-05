@@ -29,7 +29,7 @@ import android.view.SurfaceView;
  */
 public abstract class CameraBridgeViewBase extends SurfaceView implements SurfaceHolder.Callback {
 
-    private static final String TAG = "CameraBridge";
+    private static final String TAG = "CameraBridgeViewBase";
     private static final int MAX_UNSPECIFIED = -1;
     private static final int STOPPED = 0;
     private static final int STARTED = 1;
@@ -356,19 +356,24 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     // Bitmap must be constructed before surface
     private void onEnterStartedState() {
         Log.d(TAG, "call onEnterStartedState");
+
         /* Connect camera */
         if (!connectCamera(getWidth(), getHeight())) {
             AlertDialog ad = new AlertDialog.Builder(getContext()).create();
+
+
             ad.setCancelable(false); // This blocks the 'BACK' button
-            ad.setMessage("It seems that you device does not support camera (or it is locked). Application will be closed.");
+            ad.setMessage("connectCamera() FAILED. It seems that your device does not support camera (or it is locked). Application will be closed.");
             ad.setButton(DialogInterface.BUTTON_NEUTRAL,  "OK", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
+                    //dismiss dialog and end the Activity on OK click
                     dialog.dismiss();
                     ((Activity) getContext()).finish();
                 }
             });
-            ad.show();
 
+            //show the AlertDialog
+            ad.show();
         }
     }
 
@@ -408,18 +413,26 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
 
         if (bmpValid && mCacheBitmap != null) {
             Canvas canvas = getHolder().lockCanvas();
-            if (canvas != null) {
-                canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
-                if (BuildConfig.DEBUG)
-                    Log.d(TAG, "mStretch value: " + mScale);
 
+            if (canvas != null) {
+                //rotate the image
+                canvas.rotate(90f, canvas.getWidth()/2f, canvas.getHeight()/2f);
+
+                canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
+
+                if (BuildConfig.DEBUG)
+                    //Log.d(TAG, "mStretch value: " + mScale);
+
+/*
                 if (mScale != 0) {
                     canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
                          new Rect((int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2),
                          (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2),
                          (int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2 + mScale*mCacheBitmap.getWidth()),
                          (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2 + mScale*mCacheBitmap.getHeight())), null);
-                } else {
+                }
+
+                else {
                      canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
                          new Rect((canvas.getWidth() - mCacheBitmap.getWidth()) / 2,
                          (canvas.getHeight() - mCacheBitmap.getHeight()) / 2,
@@ -427,14 +440,39 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
                          (canvas.getHeight() - mCacheBitmap.getHeight()) / 2 + mCacheBitmap.getHeight()), null);
                 }
 
+ */
+
+                canvas.drawBitmap(mCacheBitmap,
+                        new Rect(0,0, /*right*/mCacheBitmap.getWidth(), /*bottom*/mCacheBitmap.getHeight()),
+                        new Rect(-(canvas.getHeight() - canvas.getWidth()) / 2,
+                        (canvas.getHeight() - canvas.getWidth()) / 2,
+                        (canvas.getHeight() - canvas.getWidth()) / 2 + canvas.getWidth(),
+                        canvas.getHeight() - (canvas.getHeight() - canvas.getWidth()) / 2),
+                        null);
+
                 if (mFpsMeter != null) {
                     mFpsMeter.measure();
                     mFpsMeter.draw(canvas, 20, 30);
                 }
+
+                //push the canvas to the screen
                 getHolder().unlockCanvasAndPost(canvas);
             }
         }
     }
+
+    /*
+    canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
+    //canvas.drawBitmap(mCacheBitmap, (canvas.getWidth() - mCacheBitmap.getWidth()) / 2, (canvas.getHeight() - mCacheBitmap.getHeight()) / 2, null);
+    //Change to support portrait view
+    Matrix matrix = new Matrix();
+            matrix.preTranslate((canvas.getWidth() - mCacheBitmap.getWidth()) / 2,(canvas.getHeight() - mCacheBitmap.getHeight()) / 2);
+
+            if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
+            matrix.postRotate(90f,(canvas.getWidth()) / 2,(canvas.getHeight()) / 2);
+            canvas.drawBitmap(mCacheBitmap, matrix, new Paint());
+
+     */
 
     /**
      * This method is invoked shall perform concrete operation to initialize the camera.

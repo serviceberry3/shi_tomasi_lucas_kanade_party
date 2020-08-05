@@ -2,6 +2,7 @@ package com.example.tomasikanade;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.os.Build;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -24,7 +25,8 @@ import org.opencv.videoio.VideoCapture;
 
 import javax.security.auth.login.LoginException;
 
-public class ShiTomasiView extends CvViewBase {
+public class ShiTomasiView extends BridgeView {
+    private final String TAG = "ShiTomasiView";
     //Mat class represents an n-dimensional dense numerical single-channel or multi-channel array. Can be used to store real or
     //complex-valued vectors and matrices, grayscale or color images, voxel volumes, vector fields, point clouds, tensors, histograms
 
@@ -42,17 +44,24 @@ public class ShiTomasiView extends CvViewBase {
     private final static int maxCorners = 100;
     private final static Scalar circleColor = new Scalar(0, 255, 0);
     private VideoCapture mCamera;
+    private SurfaceHolder mHolder;
 
 
-    public ShiTomasiView(Context context, VideoCapture camera, Mat color, Mat grayscale) {
-        super(context, camera, color, grayscale);
-        this.mCamera = camera;
+    public ShiTomasiView(Context context, int cameraId, Mat color, Mat grayscale) {
+        super(context, cameraId, color, grayscale);
         this.sceneColor = color;
         this.sceneGrayScale = grayscale;
+        mHolder = getHolder();
+    }
+
+    public void frameProcess() {
+        Canvas canvas = mHolder.lockCanvas();
     }
 
     @Override
     protected Bitmap processFrame(VideoCapture capture) {
+        Log.i(TAG, "processFrame() called");
+
         //retrieve frame from the camera and put it in the color matrix
         capture.retrieve(sceneColor, 2); //2 = CV_CAP_ANDROID_COLOR_FRAME_RGB
 
@@ -100,6 +109,7 @@ public class ShiTomasiView extends CvViewBase {
         return bmp;
     }
 
+
     @Override
     public void run() {
         super.run();
@@ -117,4 +127,5 @@ public class ShiTomasiView extends CvViewBase {
             sceneGrayScale = null;
         }
     }
+
 }
