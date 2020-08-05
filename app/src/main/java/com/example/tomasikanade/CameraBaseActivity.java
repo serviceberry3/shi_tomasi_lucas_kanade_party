@@ -22,14 +22,18 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 
-public class CameraBaseActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2, View.OnTouchListener, Runnable {
+import java.util.List;
+
+public class CameraBaseActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2, View.OnTouchListener {
 
     private static final String TAG = "CameraBaseActivity";
 
@@ -39,7 +43,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     //complex-valued vectors and matrices, grayscale or color images, voxel volumes, vector fields, point clouds, tensors, histograms
 
     //use 2 Mats to store the camera image, one in color (RGB), and one black and white
-    private Mat sceneGrayScale, sceneColor;
+    private Mat sceneGrayScale, sceneColor, mPrevGray;
 
 
     private CameraBridgeViewBase mOpenCvCameraView;
@@ -213,8 +217,80 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         return sceneGrayScale;
     }
 
-    @Override
-    public void run() {
+    //This is a Lucas-Kanade processor for a given Mat
+    public Mat sparseFlow(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        Mat mGray = inputFrame.gray();
+        Mat mGrayT = mGray.t();
+        Core.flip(mGray.t(), mGrayT, 1);
+        Imgproc.resize(mGrayT, mGrayT, mGray.size());
+        double xAvg1 = 0;
+        double xAvg2 = 0;
+        double yAvg1 = 0;
+        double yAvg2 = 0;
 
+        if (features.toArray().length == 0) {
+            int rowStep = 50, colStep = 100;
+
+            //create a new array of 12 points
+            Point points[] = new Point[12];
+
+            int k = 0;
+            for (int i = 3; i <= 6; i++) {
+                for (int j = 2; j <= 4; j++) {
+                    points[k] = new Point(j * colStep, i * rowStep);
+                    k++;
+                }
+            }
+
+            features.fromArray(points);
+
+            prevFeatures.fromList(features.toList());
+            mPrevGray = mGrayT.clone();
         }
+
+        nextFeatures.fromArray(prevFeatures.toArray());
+
+        Video.calcOpticalFlowPyrLK(mPrevGray, mGrayT, prevFeatures, nextFeatures, status, err
+        );
+
+        List<Point> prevList = features.toList(), nextList = nextFeatures.toList();
+        Scalar color = new Scalar(255, 0, 0);
+        int listSize = prevList.size();
+
+        for (int i = 0; i < listSize; i++) {
+            if (prevList.get(i) != null) {
+                xAvg1 += prevList.get(i).x;
+                yAvg1 += prevList.get(i).y;
+            }
+            if (nextList.get(i) != null) {
+                xAvg2 += nextList.get(i).x;
+                yAvg2 += nextList.get(i).y;
+            }
+            Imgproc.line(mGrayT, prevList.get(i), nextList.get(i), color);
+        }
+
+        xAvg1 /= listSize;
+        xAvg2 /= listSize;
+        yAvg1 /= listSize;
+        yAvg2 /= listSize;
+        double pointX = xAvg1 - xAvg2;
+        double pointY = yAvg1 - yAvg2;
+
+        if (points.isEmpty()) {
+            points.add(new Point(pointX, pointY));
+        }
+
+        else {
+            Point lastPoint = points.get(points.size() - 1);
+            pointX += lastPoint.x;
+            pointY += lastPoint.y;
+            points.add(new Point(pointX, pointY));
+        }
+
+        //hold onto this Mat because we'll use it as the previous frame to calc optical flow next time
+        mPrevGray = mGrayT.clone();
+
+        //return the final Mat
+        return mGrayT;
+    }
 }
