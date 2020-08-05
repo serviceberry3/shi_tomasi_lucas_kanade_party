@@ -11,16 +11,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="143ff5bf-63d4-4a58-ac93-529f995372ad" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/executionHistory/executionHistory.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/executionHistory/executionHistory.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/classAnalysis.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/classAnalysis.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/javaCompile.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/javaCompile.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CvViewBase.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/camera_view.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/camera_view.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/openCVLibrary341/src/main/java/org/opencv/android/JavaCameraView.java" beforeDir="false" afterPath="$PROJECT_DIR$/openCVLibrary341/src/main/java/org/opencv/android/JavaCameraView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/BridgeView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/BridgeView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/ShiTomasiView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/ShiTomasiView.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -149,10 +142,14 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="551" y="1463" width="1048" height="992" key="#com.intellij.codeInsight.editorActions.RestoreReferencesDialog/0.54.2160.3786@0.54.2160.3786" timestamp="1596644014688" />
-    <state x="701" y="1309" width="748" height="1159" key="#com.intellij.ide.util.MemberChooser" timestamp="1596651735587">
+    <state x="701" y="1299" width="748" height="1159" key="#com.intellij.ide.util.MemberChooser" timestamp="1596652230142">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state x="701" y="1309" width="748" height="1159" key="#com.intellij.ide.util.MemberChooser/0.54.2160.3786@0.54.2160.3786" timestamp="1596651735587" />
+    <state x="701" y="1299" width="748" height="1159" key="#com.intellij.ide.util.MemberChooser/0.54.2160.3786@0.54.2160.3786" timestamp="1596652230142" />
+    <state x="551" y="1446" width="1048" height="1026" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1596652305820">
+      <screen x="0" y="54" width="2160" height="3786" />
+    </state>
+    <state x="551" y="1446" width="1048" height="1026" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.54.2160.3786@0.54.2160.3786" timestamp="1596652305820" />
     <state x="595" y="1442" width="949" height="1101" key="FileChooserDialogImpl" timestamp="1596567570317">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>

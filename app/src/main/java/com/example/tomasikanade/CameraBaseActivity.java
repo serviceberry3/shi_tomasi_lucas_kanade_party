@@ -34,7 +34,14 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     private static final String TAG = "CameraBaseActivity";
 
     private VideoCapture mCamera;
+
+    //Mat class represents an n-dimensional dense numerical single-channel or multi-channel array. Can be used to store real or
+    //complex-valued vectors and matrices, grayscale or color images, voxel volumes, vector fields, point clouds, tensors, histograms
+
+    //use 2 Mats to store the camera image, one in color (RGB), and one black and white
     private Mat sceneGrayScale, sceneColor;
+
+
     private CameraBridgeViewBase mOpenCvCameraView;
 
     //Values needed for the corner detection algorithm Most likely have to tweak them to suit needs. Could also
@@ -46,7 +53,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     private final double k = 0.0;
     private final static int maxCorners = 100;
     private final static Scalar circleColor = new Scalar(255, 255, 0);
-    private SurfaceHolder mHolder;
 
 
     public CameraBaseActivity() {
@@ -81,7 +87,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 Log.i(TAG, "OpenCV loaded successfully, everything created");
 
 
-                mOpenCvCameraView = new ShiTomasiView(CameraBaseActivity.this, 0, sceneGrayScale, sceneColor);
+                mOpenCvCameraView = new ShiTomasiView(CameraBaseActivity.this, 0);
 
 
                 mOpenCvCameraView.setCvCameraViewListener(CameraBaseActivity.this);
@@ -91,7 +97,12 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
                 mOpenCvCameraView.enableView();
 
-                mHolder = mOpenCvCameraView.getHolder();
+                //SurfaceHolder interfaces enable apps to edit and control surfaces.
+                //A SurfaceHolder is an interface the system uses to share ownership of surfaces with apps. Some clients that
+                //work with surfaces want a SurfaceHolder, because APIs to get and set surface parameters are implemented through a
+                //SurfaceHolder. **A SurfaceView contains a SurfaceHolder**.
+                //Most components that interact with a view involve a SurfaceHolder.
+                SurfaceHolder mHolder = mOpenCvCameraView.getHolder();
 
                 //display the new instance of ShiTomasi view
                 setContentView(mOpenCvCameraView);
