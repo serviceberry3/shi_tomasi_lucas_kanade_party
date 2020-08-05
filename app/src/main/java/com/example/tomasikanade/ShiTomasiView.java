@@ -45,7 +45,7 @@ public class ShiTomasiView extends CvViewBase {
 
 
     public ShiTomasiView(Context context, VideoCapture camera, Mat color, Mat grayscale) {
-        super(context);
+        super(context, camera, color, grayscale);
         this.mCamera = camera;
         this.sceneColor = color;
         this.sceneGrayScale = grayscale;
@@ -99,21 +99,6 @@ public class ShiTomasiView extends CvViewBase {
 
         return bmp;
     }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
-        super.surfaceChanged(surfaceHolder, format, width, height);
-/*
-        synchronized (this) {
-            //instantiate the two matrices we need
-            sceneGrayScale = new Mat();
-            sceneColor = new Mat();
-        }
-
- */
-    }
-
 
     @Override
     public void run() {

@@ -14,24 +14,33 @@ import androidx.annotation.RequiresApi;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
 
 import java.util.List;
 
 //extend SurfaceView, which is our drawing surface
 public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Callback, Runnable {
-    private static final String TAG = "Sample::SurfaceView";
+    private static final String TAG = "CvViewBase";
 
     private SurfaceHolder mHolder;
 
     //videocapture is an OpenCV object used to grab camera frames
     private VideoCapture mCamera;
 
+    private Mat sceneColor, sceneGrayscale;
 
-    public CvViewBase(Context context) {
+
+    public CvViewBase(Context context, VideoCapture camera, Mat color, Mat grayscale) {
         super(context);
         mHolder = getHolder();
         mHolder.addCallback(this);
+
+        mCamera = camera;
+        sceneColor = color;
+        sceneGrayscale = grayscale;
+
+        //starting log message
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
@@ -45,15 +54,21 @@ public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Ca
 
         if (mCamera!=null) {
             if (mCamera.isOpened()) {
+                Log.d(TAG, "Starting frame processing runnable on background thread");
                 //THIS is a runnable, start it on a new thread
                 (new Thread(this)).start();
             }
+
             //if the camera's not opened, release its resources. Something went wrong?
             else {
                 mCamera.release();
                 mCamera = null;
-                Log.e(TAG, "Failed to open native camera");
+                Log.e(TAG, "Failed to open native camera, released VideoCapture resources");
             }
+        }
+
+        else {
+            Log.e(TAG, "surfaceCreated(): the VideoHolder came up null");
         }
     }
 
@@ -93,8 +108,8 @@ public abstract class CvViewBase extends SurfaceView implements SurfaceHolder.Ca
                 }
                  */
 
-                mCamera.set(3, 300); //3 = CV_CAP_PROP_FRAME_WIDTH
-                mCamera.set(4, 300); //4 =  CV_CAP_PROP_FRAME_HEIGHT
+                mCamera.set(3, 1080); //3 = CV_CAP_PROP_FRAME_WIDTH
+                mCamera.set(4, 1000); //4 =  CV_CAP_PROP_FRAME_HEIGHT
             }
         }
     }
