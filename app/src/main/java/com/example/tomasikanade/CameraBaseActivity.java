@@ -113,6 +113,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 mOpenCvCameraView.setCvCameraViewListener(CameraBaseActivity.this);
                 mOpenCvCameraView.setOnTouchListener(CameraBaseActivity.this);
 
+                //to improve speed and reduce lag of the algorithms, lower the camera frame quality
+                mOpenCvCameraView.setMaxFrameSize(720, 1280); //720 x 1280?
+
 
                 mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
                 mOpenCvCameraView.enableView();
@@ -279,18 +282,20 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         Imgproc.goodFeaturesToTrack(sceneGrayScale, corners, maxCorners, qualityLevel, minDistance, new Mat(), blockSize, useHarrisDetector, k);
 
         //get array of points from corners (filled in by the algorithm)
-        Point[] points = corners.toArray();
+        Point[] pointsFound = corners.toArray();
 
         //Log.i(TAG, String.format("Found %d points to draw", points.length));
 
+        /*
         //draw all of the key points on the screen
         for (Point p : points) {
             //what is core?
             Imgproc.circle(sceneGrayScale, p, 2, circleColor, 10);
         }
+         */
 
         //return the array of Points that holds the corners
-        return points;
+        return pointsFound;
     }
 
 
