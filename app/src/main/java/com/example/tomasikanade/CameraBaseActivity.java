@@ -208,17 +208,22 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        /*
         sceneColor = inputFrame.rgba();
 
         //convert the color image matrix to a grayscale one to improve memory usage and processing time (1 bpp instead of 3)
         //also converting to grayscale makes the contrast between features clearer
         Imgproc.cvtColor(sceneColor, sceneGrayScale, Imgproc.COLOR_BGRA2GRAY);
 
+        Point[] goodFeatures = getCorners(sceneGrayScale);
+
+        return sparseFlow(inputFrame, goodFeatures);
+    }
+
+
+    //use Shi-Tomasi algorithm to get key features of the image
+    Point[] getCorners(Mat grayScale) {
         //a matrix of points to store the corner points in when Shi-Tomasi runs
         MatOfPoint corners = new MatOfPoint();
-
-         */
 
         /* run Shi-Tomasi
         @param sceneGrayScale - our image that we want to detect corners in
@@ -233,29 +238,25 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         @param k value, only used in Harris Corner Detection.
          */
 
-        /*
         Imgproc.goodFeaturesToTrack(sceneGrayScale, corners, maxCorners, qualityLevel, minDistance, new Mat(), blockSize, useHarrisDetector, k);
 
         //get array of points from corners (filled in by the algorithm)
         Point[] points = corners.toArray();
 
         //Log.i(TAG, String.format("Found %d points to draw", points.length));
+
+        //draw all of the key points on the screen
         for (Point p : points) {
             //what is core?
             Imgproc.circle(sceneGrayScale, p, 2, circleColor, 10);
         }
 
-        //Log.i(TAG, "onCameraFrame() returning grayScale matrix...");
-        return sceneGrayScale;
-
-         */
-
-        return sparseFlow(inputFrame);
+        return points;
     }
 
 
     //This is a Lucas-Kanade processor for a given Mat
-    public Mat sparseFlow(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+    public Mat sparseFlow(CameraBridgeViewBase.CvCameraViewFrame inputFrame, Point[] pointsToTrack) {
         //get the grayscale Mat from the input camera frame
         Mat mGray = inputFrame.gray();
 
@@ -280,6 +281,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //if features is empty, that means we don't have any points to work with yet
         if (features.toArray().length == 0) {
+            /*
             int rowStep = 50, colStep = 100;
 
             //create a new array of 12 Points (an x and a y)
@@ -297,6 +299,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                     k++;
                 }
             }
+
+             */
+
+            Point points[] = pointsToTrack;
 
             //the MatofPoint class in OpenCV is a 2D array of points. We can add all of our points into our MatofPoint instance
             //by first making the array of points above and then calling fromArray()
