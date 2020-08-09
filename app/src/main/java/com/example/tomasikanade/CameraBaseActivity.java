@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -73,6 +74,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     MatOfByte status;
     MatOfFloat err;
     List<Point> points;
+
+    //the time it took to run both algorithms on the frame and get the data back; used to calculate a rough velocity of the device
+    long lastInferenceTimeNanos;
 
     public CameraBaseActivity() {
         //starting log message
@@ -217,6 +221,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        //start the clock when this frame comes in. we'll get a split at the next frame and use elapsed time for velocity calculation
+        long frameStartTime = SystemClock.elapsedRealtimeNanos();
+
         sceneColor = inputFrame.rgba();
 
         //convert the color image matrix to a grayscale one to improve memory usage and processing time (1 bpp instead of 3)
@@ -256,7 +263,12 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         }
 
         //run the sparse optical flow calculation on this grayscale frame and return the final Mat with the lines drawn
-        return sparseFlow(sceneGrayScale);
+        Mat result = sparseFlow(sceneGrayScale);
+
+        //get the time it took do do all calculations
+        lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - frameStartTime;
+
+        return result;
         //return sceneGrayScale;
     }
 
@@ -407,6 +419,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             Point prevPt = prevList.get(i);
             Point nextPt = nextList.get(i);
 
+            //remember the origin is top right, not bottom left
+            double xDiff = prevPt.x - nextPt.x;
+            double yDiff = prevPt.y - nextPt.y;
+
             if (prevPt != null) {
                 //Log.i(TAG, String.format("This point in prevList is %f, %f", prevList.get(i).x, prevList.get(i).y));
                 //tally up x and y values for previous frame
@@ -425,10 +441,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 }
             }
 
+            //modify the nextPt a bit to exaggerate it so that we can see the motion lines better (can remove this if desire)
+            Point prevPtExagg = new Point(prevPt.x +  xDiff , prevPt.y + yDiff);
+
             //if (prevPt!=null && nextPt!=null) {
             if (byteStatus.get(i)==1 && nextPt!=null && prevPt!=null) {
                 //draw out a line on the current grayScale image Mat from the previous point of interest to the location it moved to in this frame
-                Imgproc.line(mGray, nextPt, prevPt, color, 3);
+                Imgproc.line(mGray, nextPt, prevPtExagg, color, 3);
             }
 
             //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
@@ -443,26 +462,24 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         yAvg2 /= listSize;
 
         //get the average shift in x and y in pixels between last frame and this frame
-        double pointX = xAvg1 - xAvg2;
-        double pointY = yAvg1 - yAvg2;
+        //DON'T FORGET the origin is top right, not bottom left
+        double pointX = xAvg1 - xAvg2; //x displacement
+        double pointY = yAvg1 - yAvg2; //y displacement
 
-        //if our List of Points (the global one) is empty (this is our first run of sparseFlw), add the average shift values as the first point
-        if (points.isEmpty()) {
-            points.add(new Point(pointX, pointY));
-        }
+        //we need some way to get the time between frames
 
-        //otherwise there are already some points in the list
-        else {
+        //if our List of Points (the global one) is not empty (this is our first run of sparseFlw), calculate the cumulative total shift in x and y
+        if (!points.isEmpty()) {
             //get the most recent x and y shift values
             Point lastPoint = points.get(points.size() - 1);
 
             //add the cumulative running x and y shift totals to the ones for just this frame change
             pointX += lastPoint.x;
             pointY += lastPoint.y;
-
-            //add the new cumulative deltaX and deltaY totals as point to end of the List
-            points.add(new Point(pointX, pointY));
         }
+
+        //if list empty, just add deltaX and deltaY totals as first pt in the List. If it wasn't empty add the new cumulative totals to end of list
+        points.add(new Point(pointX, pointY));
 
         //hold onto this Mat because we'll use it as the previous frame to calc optical flow next time
         //capture the current mGrayT (Mat of all pixels from cam), clone it into mPrevGray for later use (clone() COPIES all pixels in memory)
