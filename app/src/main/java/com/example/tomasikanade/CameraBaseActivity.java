@@ -42,7 +42,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     private static final String TAG = "CameraBaseActivity";
 
-    private VideoCapture mCamera;
+    //VIDEOCAPTURE DOESN'T WORK FOR ANDROID
+    //private VideoCapture mCamera;
 
     //Mat class represents an n-dimensional dense numerical single-channel or multi-channel array. Can be used to store real or
     //complex-valued vectors and matrices, grayscale or color images, voxel volumes, vector fields, point clouds, tensors, histograms
@@ -92,12 +93,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //setContentView(R.layout.camera_view);
     }
 
+    //use this OpenCV loader callback to instantiate Mat objects, otherwise we'll get an error about Mat not being found
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             Log.i(TAG, "BaseLoaderCallback called!");
             if (status == LoaderCallbackInterface.SUCCESS) {//instantiate everything we need from OpenCV
-                mCamera = new VideoCapture();
+                //mCamera = new VideoCapture();
                 sceneColor = new Mat();
                 sceneGrayScale = new Mat();
 
@@ -220,22 +222,26 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //if the camera is just being loaded, get the Shi-Tomasi good features to track first time
         if (prevFeatures.rows() == 0) {
+            Log.i(TAG, "prevFeatures is empty, now populating with Shi-Tomasi");
+
             //copy this image matrix to previous matrix
             sceneGrayScale.copyTo(mPrevGray);
 
             //get the current corners and put them in prevFeatures
-            prevFeatures.fromArray(getCorners(sceneGrayScale));;
+            prevFeatures.fromArray(getCorners(sceneGrayScale));
 
             //get safe copy of these corners
             prevFeatures.copyTo(safeFeatures);
+
+            //safeFeatures now holds the very first set of corners seen by the camera
         }
 
         //otherwise this isn't the first frame, so we already have some features that we're tracking and some existent image mats
         else {
-            //copy this image mat to previous one
-            sceneGrayScale.copyTo(mPrevGray);
+            //copy this image mat to previous one (mPrevGray)
+            //sceneGrayScale.copyTo(mPrevGray);
 
-            //get the corners for this mat
+            //get the corners for this current mat and store them in thisFeatures
             thisFeatures.fromArray(getCorners(sceneGrayScale));
 
             //retrieve the corners from the previous mat (save calculating them again)
@@ -245,6 +251,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             thisFeatures.copyTo(safeFeatures);
         }
 
+        //run the sparse optical flow calculation on this grayscale frame and return the final Mat with the lines drawn
         return sparseFlow(sceneGrayScale);
         //return sceneGrayScale;
     }
@@ -267,7 +274,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         @param boolean is whether we're going to use Harris Corner Detection or not. In this example we aren't, we use Shi-Tomasi
         @param k value, only used in Harris Corner Detection.
          */
-
+        //we store the returned corners in '''corners'''
         Imgproc.goodFeaturesToTrack(sceneGrayScale, corners, maxCorners, qualityLevel, minDistance, new Mat(), blockSize, useHarrisDetector, k);
 
         //get array of points from corners (filled in by the algorithm)
@@ -275,13 +282,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //Log.i(TAG, String.format("Found %d points to draw", points.length));
 
-
         //draw all of the key points on the screen
         for (Point p : points) {
             //what is core?
             Imgproc.circle(sceneGrayScale, p, 2, circleColor, 10);
         }
 
+        //return the array of Points that holds the corners
         return points;
     }
 
@@ -304,10 +311,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //resize mGrayT image, the output image size being set to mGray.size()
         //Imgproc.resize(mGrayT, mGrayT, mGray.size());
 
-        //initialize some doubles
+        //initialize some doubles to hold the average position of the corners in the previous frame vs the current frame
+        //average position of the goodFeatures in previous frame
         double xAvg1 = 0;
-        double xAvg2 = 0;
         double yAvg1 = 0;
+
+        //average position of the goodFeatures in this frame
+        double xAvg2 = 0;
         double yAvg2 = 0;
 
         //if features is empty, that means we don't have any points to work with yet
@@ -447,7 +457,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //hold onto this Mat because we'll use it as the previous frame to calc optical flow next time
         //capture the current mGrayT (Mat of all pixels from cam), clone it into mPrevGray for later use (clone() COPIES all pixels in memory)
-        //mPrevGray = mGray.clone();
+        mPrevGray = mGray.clone();
 
         //thisFeatures.copyTo(prevFeatures);
 
