@@ -6,7 +6,7 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
-    <option name="TOOL_WINDOW_LOG_LEVEL" value="verbose" />
+    <option name="TOOL_WINDOW_LOG_LEVEL" value="error" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
@@ -15,8 +15,12 @@
       <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/fileHashes/fileHashes.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/classAnalysis.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/classAnalysis.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/javaCompile.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.1.1/javaCompile/javaCompile.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/build_file_checksums.ser" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/build_file_checksums.ser" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/app/app.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/openCVLibrary341/openCVLibrary341.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/openCVLibrary341/openCVLibrary341.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" afterDir="false" />
     </list>
@@ -155,26 +159,26 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="551" y="1446" width="1048" height="1026" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.54.2160.3786@0.54.2160.3786" timestamp="1596652305820" />
-    <state x="595" y="1432" width="949" height="1101" key="FileChooserDialogImpl" timestamp="1596654323746">
+    <state x="595" y="1422" width="949" height="1101" key="FileChooserDialogImpl" timestamp="1596934074730">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state x="595" y="1432" width="949" height="1101" key="FileChooserDialogImpl/0.54.2160.3786@0.54.2160.3786" timestamp="1596654323746" />
-    <state width="2160" height="771" key="GridCell.Tab.0.bottom" timestamp="1596650128855">
+    <state x="595" y="1422" width="949" height="1101" key="FileChooserDialogImpl/0.54.2160.3786@0.54.2160.3786" timestamp="1596934074730" />
+    <state width="2160" height="771" key="GridCell.Tab.0.bottom" timestamp="1596929167187">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="771" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1596650128855" />
-    <state width="2160" height="771" key="GridCell.Tab.0.center" timestamp="1596650128855">
+    <state width="2160" height="771" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1596929167187" />
+    <state width="2160" height="771" key="GridCell.Tab.0.center" timestamp="1596929167187">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="771" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1596650128855" />
-    <state width="2160" height="771" key="GridCell.Tab.0.left" timestamp="1596650128854">
+    <state width="2160" height="771" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1596929167187" />
+    <state width="2160" height="771" key="GridCell.Tab.0.left" timestamp="1596929167186">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="771" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1596650128854" />
-    <state width="2160" height="771" key="GridCell.Tab.0.right" timestamp="1596650128855">
+    <state width="2160" height="771" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1596929167186" />
+    <state width="2160" height="771" key="GridCell.Tab.0.right" timestamp="1596929167187">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="771" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1596650128855" />
+    <state width="2160" height="771" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1596929167187" />
     <state x="412" y="1606" key="com.intellij.ide.util.TipDialog" timestamp="1596644757318">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
@@ -187,9 +191,9 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="454" y="1252" width="1231" height="1428" key="psd.add.module.dependency.panel.dimension/0.54.2160.3786@0.54.2160.3786" timestamp="1596567731191" />
-    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup" timestamp="1596647296250">
+    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup" timestamp="1596929965040">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup/0.54.2160.3786@0.54.2160.3786" timestamp="1596647296250" />
+    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup/0.54.2160.3786@0.54.2160.3786" timestamp="1596929965040" />
   </component>
 </project>
