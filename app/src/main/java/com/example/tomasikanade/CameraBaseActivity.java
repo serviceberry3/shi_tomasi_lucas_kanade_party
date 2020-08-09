@@ -32,6 +32,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
@@ -78,6 +79,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     //the time it took to run both algorithms on the frame and get the data back; used to calculate a rough velocity of the device
     long lastInferenceTimeNanos;
 
+    //the x and y displacement between the last two frames, along with the velocity calculated
+    double pointX, pointY, xVel, yVel;
+
     public CameraBaseActivity() {
         //starting log message
         Log.i(TAG, "Instantiated new " + this.getClass());
@@ -113,14 +117,16 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
                 mOpenCvCameraView = new ShiTomasiView(CameraBaseActivity.this, 0);
 
-
+                //set the camera listener callback to the one declared in this class
                 mOpenCvCameraView.setCvCameraViewListener(CameraBaseActivity.this);
+
+
                 mOpenCvCameraView.setOnTouchListener(CameraBaseActivity.this);
 
                 //to improve speed and reduce lag of the algorithms, lower the camera frame quality
                 mOpenCvCameraView.setMaxFrameSize(720, 1280); //720 x 1280?
 
-
+                //make the camera view visible
                 mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
                 mOpenCvCameraView.enableView();
 
@@ -219,6 +225,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         err = new MatOfFloat();
     }
 
+    void rotate(Mat src, double angle, Mat dest) {
+        int len = Math.max(src.cols(), src.rows());
+        Point pt = new Point(len/2., len/2.);
+        Mat r = Imgproc.getRotationMatrix2D(pt, angle, 1.0);
+        Imgproc.warpAffine(src, dest, r, new Size(len, len));
+    }
+
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         //start the clock when this frame comes in. we'll get a split at the next frame and use elapsed time for velocity calculation
@@ -267,6 +280,43 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //get the time it took do do all calculations
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - frameStartTime;
+
+        Log.i(TAG, String.format("Time frame took: %d ns", lastInferenceTimeNanos));
+
+        float timeInSec = lastInferenceTimeNanos * 1f / 1000000000;
+
+        Log.i(TAG, String.format("Time frame took: %f s", timeInSec));
+
+        xVel = pointX / timeInSec;
+        yVel = pointY / timeInSec;
+
+        //create and rotate the text to display velocity
+        Mat textImg = Mat.zeros(result.rows(), result.cols(), result.type());
+
+        Imgproc.putText(result, String.format("Velocity(m/s) y: %f, x: %f", xVel, yVel), new Point(100, 100), Core.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                new Scalar(255, 255, 255),
+                0);
+
+        //rotate the text so it's facing the right way
+        //rotate(textImg, -45, textImg);
+
+        //Imgproc.cvtColor(textImg, textImg, Imgproc.COLOR_RGB2BGRA);
+
+        //return textImg;
+
+        //result = result + textImg;
+
+        Log.i(TAG, String.format("The result mat has %d channels, textImg has %d channels", result.channels(), textImg.channels()));
+        Log.i(TAG, String.format("The result mat has %d columns %d rows, textImg has %d col %d row",
+                result.cols(),
+                result.rows(),
+                textImg.cols(),
+                textImg.rows()));
+
+        //Imgproc.cvtColor(textImg, textImg, Imgproc.COLOR_BGRA2GRAY);
+
+       //Core.add(result, textImg, result);
 
         return result;
         //return sceneGrayScale;
@@ -463,8 +513,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //get the average shift in x and y in pixels between last frame and this frame
         //DON'T FORGET the origin is top right, not bottom left
-        double pointX = xAvg1 - xAvg2; //x displacement
-        double pointY = yAvg1 - yAvg2; //y displacement
+        pointX = xAvg1 - xAvg2; //x displacement
+        pointY = yAvg1 - yAvg2; //y displacement
 
         //we need some way to get the time between frames
 
