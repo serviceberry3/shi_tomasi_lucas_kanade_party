@@ -63,8 +63,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     private final static int maxCorners = 100;
     private final static Scalar circleColor = new Scalar(255, 255, 0);
 
+    Point[] goodFeaturesPrev = null, goodFeaturesNext = null;
+
     //initialize two matrices of points
-    MatOfPoint2f prevFeatures, nextFeatures;
+    MatOfPoint2f prevFeatures, nextFeatures, thisFeatures, safeFeatures;
     MatOfPoint features;
 
     MatOfByte status;
@@ -202,6 +204,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         prevFeatures = new MatOfPoint2f();
         points = new ArrayList<>();
         nextFeatures = new MatOfPoint2f();
+        thisFeatures = new MatOfPoint2f();
+        safeFeatures = new MatOfPoint2f();
         status = new MatOfByte();
         err = new MatOfFloat();
     }
@@ -214,9 +218,34 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //also converting to grayscale makes the contrast between features clearer
         Imgproc.cvtColor(sceneColor, sceneGrayScale, Imgproc.COLOR_BGRA2GRAY);
 
-        Point[] goodFeatures = getCorners(sceneGrayScale);
+        //if the camera is just being loaded, get the Shi-Tomasi good features to track first time
+        if (prevFeatures.rows() == 0) {
+            //copy this image matrix to previous matrix
+            sceneGrayScale.copyTo(mPrevGray);
 
-        return sparseFlow(sceneGrayScale, goodFeatures);
+            //get the current corners and put them in prevFeatures
+            prevFeatures.fromArray(getCorners(sceneGrayScale));;
+
+            //get safe copy of these corners
+            prevFeatures.copyTo(safeFeatures);
+        }
+
+        //otherwise this isn't the first frame, so we already have some features that we're tracking and some existent image mats
+        else {
+            //copy this image mat to previous one
+            sceneGrayScale.copyTo(mPrevGray);
+
+            //get the corners for this mat
+            thisFeatures.fromArray(getCorners(sceneGrayScale));
+
+            //retrieve the corners from the previous mat (save calculating them again)
+            safeFeatures.copyTo(prevFeatures);
+
+            //save these current corners for next time
+            thisFeatures.copyTo(safeFeatures);
+        }
+
+        return sparseFlow(sceneGrayScale);
         //return sceneGrayScale;
     }
 
@@ -253,14 +282,12 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             Imgproc.circle(sceneGrayScale, p, 2, circleColor, 10);
         }
 
-
-
         return points;
     }
 
 
     //This is a Lucas-Kanade processor for a given Mat
-    public Mat sparseFlow(Mat inputFrame, Point[] pointsToTrack) {
+    public Mat sparseFlow(Mat inputFrame) {
         //get the grayscale Mat from the input camera frame
         mGray = inputFrame;
 
@@ -284,8 +311,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         double yAvg2 = 0;
 
         //if features is empty, that means we don't have any points to work with yet
+        /*
         if (features.toArray().length == 0) {
-            /*
+            Log.i(TAG, "features is empty, now populating with Shi-Tomasi points");
+
             int rowStep = 50, colStep = 100;
 
             //create a new array of 12 Points (an x and a y)
@@ -304,7 +333,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 }
             }
 
-             */
+
 
             //the MatofPoint class in OpenCV is a 2D array of points. We can add all of our Shi-Tomasi points into our MatofPoint instance
             //by calling fromArray() on the array of Points
@@ -314,9 +343,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             prevFeatures.fromList(features.toList());
         }
 
+
+         */
+
         //set nextFeatures equal to prevFeatures. I think we have to do this as safety thing in case some of nextFeatures can't be populated by
         //the algorithm, since we iterate through all of nextFeatures after it runs to extract the deltaX and deltaY
-        nextFeatures.fromArray(prevFeatures.toArray());
+        //nextFeatures.fromArray(prevFeatures.toArray());
+
 
         /*run the Lucas-Kanade algo
         @param prevImg – first 8-bit input image or pyramid constructed by buildOpticalFlowPyramid()
@@ -334,36 +367,54 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //here we pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, the newest Shi-Tomasi pts as prevFeatures,
         //and a MatofPoint nextFeatures which by default is the same as prevFeatures but should be modified
-        Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, nextFeatures, status, err); //features we track are the ones from goodFeaturesToTrack()
+        Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //features we track are the ones from goodFeaturesToTrack()
 
-        //create two lists of points, one of the old goodFeatures, one of current goodFeatures traced/found by Lucas-Kanade algorithm
-        List<Point> prevList = features.toList(), nextList = nextFeatures.toList();
+        //create two lists of points, one of the goodFeatures from previous frame, one of current goodFeatures traced/found by Lucas-Kanade algorithm
+        List<Point> prevList = prevFeatures.toList(), nextList = thisFeatures.toList();
+        List<Byte> byteStatus = status.toList();
+
+        int y = byteStatus.size() - 1;
 
         //define a color
-        Scalar color = new Scalar(200, 0, 0);
+        Scalar color = new Scalar(255, 0, 0);
+
+        boolean test = false;
 
         //get the number of goodFeatures there were initially
         int listSize = prevList.size();
 
         //iterate over all items in the Point Lists
-        for (int i = 0; i < listSize; i++) {
+        for (int i = 0; i < y /*listSize*/; i++) {
+            Point prevPt = prevList.get(i);
+            Point nextPt = nextList.get(i);
 
-
-            if (prevList.get(i) != null) {
-                Log.i(TAG, String.format("This point in prevList is %f, %f", prevList.get(i).x, prevList.get(i).y));
+            if (prevPt != null) {
+                //Log.i(TAG, String.format("This point in prevList is %f, %f", prevList.get(i).x, prevList.get(i).y));
                 //tally up x and y values for previous frame
-                xAvg1 += prevList.get(i).x;
-                yAvg1 += prevList.get(i).y;
+                xAvg1 += prevPt.x;
+                yAvg1 += prevPt.y;
             }
 
-            if (nextList.get(i) != null) {
+            if (nextPt != null) {
                 //tally up x and y values for this frame
-                xAvg2 += nextList.get(i).x;
-                yAvg2 += nextList.get(i).y;
+                xAvg2 += nextPt.x;
+                yAvg2 += nextPt.y;
+
+                if (test==false) {
+                    Log.i(TAG, String.format("Point originally at (%f, %f), moved to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
+                    test = true;
+                }
             }
 
-            //draw out a line on the mGrayT image Mat from the previous point of interest to the location it moved to in this frame
-            Imgproc.line(mGray, prevList.get(i), nextList.get(i), color, 3);
+            //if (prevPt!=null && nextPt!=null) {
+            if (byteStatus.get(i)==1) {
+                //draw out a line on the mGrayT image Mat from the previous point of interest to the location it moved to in this frame
+                Imgproc.line(mGray, nextPt, prevPt, color, 3);
+            }
+
+            //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
+
+            //Imgproc.line(mGray, new Point(10,200), new Point(300,200), color, 3);
         }
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
@@ -396,7 +447,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //hold onto this Mat because we'll use it as the previous frame to calc optical flow next time
         //capture the current mGrayT (Mat of all pixels from cam), clone it into mPrevGray for later use (clone() COPIES all pixels in memory)
-        mPrevGray = mGray.clone();
+        //mPrevGray = mGray.clone();
+
+        //thisFeatures.copyTo(prevFeatures);
 
         //return the final Mat
         return mGray;
