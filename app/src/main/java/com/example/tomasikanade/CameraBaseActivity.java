@@ -233,7 +233,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             //get safe copy of these corners
             prevFeatures.copyTo(safeFeatures);
 
-            //safeFeatures now holds the very first set of corners seen by the camera
+            //safeFeatures now holds the very first set of corners seen by the camera. Notice thisFeatures is still unpopulated, it wont' be populated
+            //for first time until Lucas-Kanade is run for the first time on the below call to sparseFlow()
         }
 
         //otherwise this isn't the first frame, so we already have some features that we're tracking and some existent image mats
@@ -295,7 +296,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     //This is a Lucas-Kanade processor for a given Mat
     public Mat sparseFlow(Mat inputFrame) {
-        //get the grayscale Mat from the input camera frame
+        //get the CURRENT grayscale Mat from the input camera frame
         mGray = inputFrame;
 
         //do transposition
@@ -375,17 +376,20 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             such cases).
          */
 
-        //here we pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, the newest Shi-Tomasi pts as prevFeatures,
+        //here we pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, last frame's Shi-Tomasi pts as prevFeatures,
         //and a MatofPoint nextFeatures which by default is the same as prevFeatures but should be modified
+        //NOTE: on first call of sparseFlow(), mPrevGray will = mGray, prevFeatures will hold goodFeatures of current frame, thisFeatures will be empty
         Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //features we track are the ones from goodFeaturesToTrack()
 
         //create two lists of points, one of the goodFeatures from previous frame, one of current goodFeatures traced/found by Lucas-Kanade algorithm
         List<Point> prevList = prevFeatures.toList(), nextList = thisFeatures.toList();
+
+        //get the statuses (statii?) after the algorithm run
         List<Byte> byteStatus = status.toList();
 
         int y = byteStatus.size() - 1;
 
-        //define a color
+        //define a color for our tracking lines
         Scalar color = new Scalar(255, 0, 0);
 
         boolean test = false;
@@ -417,8 +421,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             }
 
             //if (prevPt!=null && nextPt!=null) {
-            if (byteStatus.get(i)==1) {
-                //draw out a line on the mGrayT image Mat from the previous point of interest to the location it moved to in this frame
+            if (byteStatus.get(i)==1 && nextPt!=null && prevPt!=null) {
+                //draw out a line on the current grayScale image Mat from the previous point of interest to the location it moved to in this frame
                 Imgproc.line(mGray, nextPt, prevPt, color, 3);
             }
 
