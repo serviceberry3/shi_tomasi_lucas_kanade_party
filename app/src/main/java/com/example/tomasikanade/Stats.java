@@ -43,7 +43,7 @@ public class Stats {
 
             this.med = half;
 
-            Log.i("STATDBUG", String.format("l is %d, n is %d, half computed as %d", l, n, half));
+            //Log.i("STATDBUG", String.format("l is %d, n is %d, half computed as %d", l, n, half));
 
             return (float)a[l + half].getDispVect();
         }
@@ -55,7 +55,7 @@ public class Stats {
         int q1RtInd;
         int q3LeftInd;
 
-        Log.i("STATDBUG", String.format("IQR called with n as %d", n));
+        //Log.i("STATDBUG", String.format("IQR called with n as %d", n));
         float[] ret = new float[3];
 
         if (n <= 2) {
@@ -65,11 +65,11 @@ public class Stats {
 
         //get median of data
         float medFound = median(a, 0, n);
-        Log.i("STATDBUG", String.format("median found to be %f, med set to %f", medFound, med));
+        //Log.i("STATDBUG", String.format("median found to be %f, med set to %f", medFound, med));
 
         //check if med contains a .5
         if ((med / 0.5) % 2 == 0) {
-            Log.i("STATDBUG", "Median index is whole num");
+            //Log.i("STATDBUG", "Median index is whole num");
             //does not contain a .5, so our quarter 1 right index is just (med-1) and quarter 3 left index is (med+1)
             q1RtInd = (int)med-1;
             q3LeftInd = (int)med+1;
@@ -82,11 +82,11 @@ public class Stats {
 
         //get median of first half of data
         float Q1 = median(a, 0, q1RtInd + 1);
-        Log.i("STATDBUG", String.format("q1 found to be %f", Q1));
+        //Log.i("STATDBUG", String.format("q1 found to be %f", Q1));
 
         //get median of second half
         float Q3 = median(a, q3LeftInd, n);
-        Log.i("STATDBUG", String.format("q3 found to be %f", Q3));
+        //Log.i("STATDBUG", String.format("q3 found to be %f", Q3));
 
         //IQR calculation
         ret[0] = Q1;

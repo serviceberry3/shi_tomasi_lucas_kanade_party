@@ -61,7 +61,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     //Values needed for the corner detection algorithm Most likely have to tweak them to suit needs. Could also
     //let the application find out the best values by itself.
-    private final static double qualityLevel = 0.25; //.35
+    private final static double qualityLevel = 0.35; //.35
     private final static double minDistance = 10;
     private final static int blockSize = 8;
     private final static boolean useHarrisDetector = false;
@@ -310,11 +310,11 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //get the time it took do do all calculations
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - frameStartTime;
 
-        Log.i(TAG, String.format("Time frame took: %d ns", lastInferenceTimeNanos));
+        //Log.i(TAG, String.format("Time frame took: %d ns", lastInferenceTimeNanos));
 
         float timeInSec = lastInferenceTimeNanos * 1f / 1000000000;
 
-        Log.i(TAG, String.format("Time frame took: %f s", timeInSec));
+        //Log.i(TAG, String.format("Time frame took: %f s", timeInSec));
 
         xVel = pointX / timeInSec;
         yVel = pointY / timeInSec;
@@ -322,10 +322,12 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //create and rotate the text to display velocity
         Mat textImg = Mat.zeros(result.rows(), result.cols(), result.type());
 
-        Imgproc.putText(result, String.format("Velocity(m/s) y: %f, x: %f", xVel, yVel), new Point(100, 100), Core.FONT_HERSHEY_SIMPLEX,
+        /*Imgproc.putText(result, String.format("Velocity(m/s) y: %f, x: %f", xVel, yVel), new Point(100, 100), Core.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 new Scalar(255, 255, 255),
                 0);
+
+         */
 
         //rotate the text so it's facing the right way
         //rotate(textImg, -45, textImg);
@@ -336,12 +338,14 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //result = result + textImg;
 
-        Log.i(TAG, String.format("The result mat has %d channels, textImg has %d channels", result.channels(), textImg.channels()));
+        /*Log.i(TAG, String.format("The result mat has %d channels, textImg has %d channels", result.channels(), textImg.channels()));
         Log.i(TAG, String.format("The result mat has %d columns %d rows, textImg has %d col %d row",
                 result.cols(),
                 result.rows(),
                 textImg.cols(),
                 textImg.rows()));
+
+         */
 
         //Imgproc.cvtColor(textImg, textImg, Imgproc.COLOR_BGRA2GRAY);
 
@@ -529,7 +533,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 yAvg2 += nextPt.y;
 
                 if (test==false) {
-                    Log.i(TAG, String.format("Point originally at (%f, %f), moved to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
+                    //Log.i(TAG, String.format("Point originally at (%f, %f), moved to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
                     test = true;
                 }
             }
@@ -561,19 +565,18 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         float[] quartileStats = stats.IQR(cornerList, cornerList.length);
 
         if (quartileStats != null) {
-            float outlierCutoff = 14f * quartileStats[2];
+            float outlierCutoff = 11f * quartileStats[2];
 
             float outlierLow = (float) (quartileStats[0] - outlierCutoff);
             float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
 
             for (int i = 0; i < y; i++) {
                 float thisDisp = (float) cornerList[i].getDispVect();
-                if (thisDisp >= outlierHigh || thisDisp <= outlierLow) {
-                    Log.i(TAG, "Found outlier");
+                if (thisDisp >= outlierHigh) {
+                    Log.i(TAG, String.format("Found high outlier with disp %f", thisDisp));
                 }
             }
         }
-
 
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
