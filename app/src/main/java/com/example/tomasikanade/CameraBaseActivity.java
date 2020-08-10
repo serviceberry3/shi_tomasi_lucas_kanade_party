@@ -61,7 +61,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     //Values needed for the corner detection algorithm Most likely have to tweak them to suit needs. Could also
     //let the application find out the best values by itself.
-    private final static double qualityLevel = 0.35; //.35
+    private final static double qualityLevel = 0.25; //.35
     private final static double minDistance = 10;
     private final static int blockSize = 8;
     private final static boolean useHarrisDetector = false;
@@ -108,12 +108,12 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //make sure screen stays on even if it's not touched for a while
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        cornerList = new KeyFeature[10];
+        cornerList = new KeyFeature[3];
 
 
 
         //test out the stats
-        for (int i=0; i<10; i++) {
+        for (int i=0; i<3; i++) {
             cornerList[i] = new KeyFeature(null, 0, 0, i);
         }
 
@@ -121,8 +121,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             Log.i(TAG, String.format("Stat testing Disp %f", cornerList[i].getDispVect()));
         }
 
-        float testing = stats.IQR(cornerList, cornerList.length);
-        Log.i(TAG, String.format("Stats found %f as IQR", testing));
+        float[] testing = stats.IQR(cornerList, cornerList.length);
+        Log.i(TAG, String.format("Stats found %f as IQR", testing[2]));
 
         //setContentView(R.layout.camera_view);
     }
@@ -555,6 +555,25 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         for (int i = 0; i < y; i++) {
             //Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
         }
+
+
+        //run stats on the points and get the interquartile range
+        float[] quartileStats = stats.IQR(cornerList, cornerList.length);
+
+        if (quartileStats != null) {
+            float outlierCutoff = 14f * quartileStats[2];
+
+            float outlierLow = (float) (quartileStats[0] - outlierCutoff);
+            float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
+
+            for (int i = 0; i < y; i++) {
+                float thisDisp = (float) cornerList[i].getDispVect();
+                if (thisDisp >= outlierHigh || thisDisp <= outlierLow) {
+                    Log.i(TAG, "Found outlier");
+                }
+            }
+        }
+
 
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame

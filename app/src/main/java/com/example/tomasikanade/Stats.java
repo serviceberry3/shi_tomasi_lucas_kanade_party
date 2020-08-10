@@ -20,12 +20,12 @@ public class Stats {
         }
 
         else if (n-l==1) {
-            return (float)a[0].getDispVect();
+            return (float)a[l].getDispVect();
         }
 
         else if (n-l==2) {
             //if two data, return the average
-            return (float)((a[0].getDispVect() + a[1].getDispVect()) / 2);
+            return (float)((a[l].getDispVect() + a[l + 1].getDispVect()) / 2);
         }
 
         //check if the amount of data is even
@@ -43,15 +43,25 @@ public class Stats {
 
             this.med = half;
 
+            Log.i("STATDBUG", String.format("l is %d, n is %d, half computed as %d", l, n, half));
+
             return (float)a[l + half].getDispVect();
         }
     }
 
     //calculate the interquartile range for a set of displacement data
-    public float IQR(KeyFeature[] a, int n)
+    public float[] IQR(KeyFeature[] a, int n)
     {
         int q1RtInd;
         int q3LeftInd;
+
+        Log.i("STATDBUG", String.format("IQR called with n as %d", n));
+        float[] ret = new float[3];
+
+        if (n <= 2) {
+            //don't calculate IQR unless have at least 3 data
+            return null;
+        }
 
         //get median of data
         float medFound = median(a, 0, n);
@@ -79,6 +89,10 @@ public class Stats {
         Log.i("STATDBUG", String.format("q3 found to be %f", Q3));
 
         //IQR calculation
-        return (Q3 - Q1);
+        ret[0] = Q1;
+        ret[1] = Q3;
+        ret[2] = Q3-Q1;
+
+        return ret;
     }
 }
