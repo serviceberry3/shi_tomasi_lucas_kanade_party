@@ -1,10 +1,12 @@
 package com.example.tomasikanade;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Bitmap;
 import android.graphics.Camera;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -37,6 +39,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,6 +83,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     //instance of MergeSort to serve as our sorter for everything (probably could use a Singleton?)
     MergeSort mergeSort;
 
+    //stats
+    Stats stats = new Stats();
+
     //the time it took to run both algorithms on the frame and get the data back; used to calculate a rough velocity of the device
     long lastInferenceTimeNanos;
 
@@ -101,6 +107,22 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //make sure screen stays on even if it's not touched for a while
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        cornerList = new KeyFeature[10];
+
+
+
+        //test out the stats
+        for (int i=0; i<10; i++) {
+            cornerList[i] = new KeyFeature(null, 0, 0, i);
+        }
+
+        for (int i = 0; i < cornerList.length; i++) {
+            Log.i(TAG, String.format("Stat testing Disp %f", cornerList[i].getDispVect()));
+        }
+
+        float testing = stats.IQR(cornerList, cornerList.length);
+        Log.i(TAG, String.format("Stats found %f as IQR", testing));
 
         //setContentView(R.layout.camera_view);
     }
@@ -238,6 +260,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         Imgproc.warpAffine(src, dest, r, new Size(len, len));
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         //start the clock when this frame comes in. we'll get a split at the next frame and use elapsed time for velocity calculation
@@ -530,8 +553,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //print out the list of displacements(checking to see if sort worked)
         for (int i = 0; i < y; i++) {
-            Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
+            //Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
         }
+
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
         xAvg1 /= listSize;
