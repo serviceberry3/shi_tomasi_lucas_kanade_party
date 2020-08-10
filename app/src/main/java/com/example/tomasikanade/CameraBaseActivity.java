@@ -75,6 +75,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     MatOfByte status;
     MatOfFloat err;
     List<Point> points;
+    KeyFeature[] cornerList;
+
+    //instance of MergeSort to serve as our sorter for everything (probably could use a Singleton?)
+    MergeSort mergeSort;
 
     //the time it took to run both algorithms on the frame and get the data back; used to calculate a rough velocity of the device
     long lastInferenceTimeNanos;
@@ -218,11 +222,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         features = new MatOfPoint();
         prevFeatures = new MatOfPoint2f();
         points = new ArrayList<>();
+        //cornerList = new ArrayList<>();
         nextFeatures = new MatOfPoint2f();
         thisFeatures = new MatOfPoint2f();
         safeFeatures = new MatOfPoint2f();
         status = new MatOfByte();
         err = new MatOfFloat();
+        mergeSort = new MergeSort();
     }
 
     void rotate(Mat src, double angle, Mat dest) {
@@ -459,19 +465,33 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //define a color for our tracking lines
         Scalar color = new Scalar(255, 0, 0);
 
+        //know when to log
         boolean test = false;
 
         //get the number of goodFeatures there were initially
         int listSize = prevList.size();
 
+        //create array of KeyFeatures the size of byteStatus list
+        cornerList = new KeyFeature[y];
+
         //iterate over all items in the Point Lists
         for (int i = 0; i < y /*listSize*/; i++) {
+            //get the previous point and current point corresponding to this feature
             Point prevPt = prevList.get(i);
             Point nextPt = nextList.get(i);
 
-            //remember the origin is top right, not bottom left
+            //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
             double xDiff = prevPt.x - nextPt.x;
             double yDiff = prevPt.y - nextPt.y;
+
+            //pythagorean to get the absolute displacement magnitude
+            double dispVect = Math.sqrt(Math.pow(xDiff,2) + Math.pow(yDiff,2));
+
+            //now make a new KeyFeature and store the CURRENT coordinates (Point), x displacement, y displacement, and "overall" displacement magnitude
+            KeyFeature thisFeature = new KeyFeature(nextPt, xDiff, yDiff, dispVect);
+
+            //push the feature to the ArrayList of KeyFeatures
+            cornerList[i] = thisFeature;
 
             if (prevPt != null) {
                 //Log.i(TAG, String.format("This point in prevList is %f, %f", prevList.get(i).x, prevList.get(i).y));
@@ -492,7 +512,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             }
 
             //modify the nextPt a bit to exaggerate it so that we can see the motion lines better (can remove this if desire)
-            Point prevPtExagg = new Point(prevPt.x +  xDiff , prevPt.y + yDiff);
+            Point prevPtExagg = new Point(prevPt.x +  xDiff , prevPt.y + yDiff); //double length of line
 
             //if (prevPt!=null && nextPt!=null) {
             if (byteStatus.get(i)==1 && nextPt!=null && prevPt!=null) {
@@ -503,6 +523,14 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
 
             //Imgproc.line(mGray, new Point(10,200), new Point(300,200), color, 3);
+        }
+
+        //sort all of the points found by the amount they've moved since the last frame
+        mergeSort.sort(cornerList, 0, cornerList.length - 1);
+
+        //print out the list of displacements(checking to see if sort worked)
+        for (int i = 0; i < y; i++) {
+            Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
         }
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
