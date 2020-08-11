@@ -112,7 +112,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
 
 
-        //test out the stats
+        //TEST OUT THE STATS
         for (int i=0; i<3; i++) {
             cornerList[i] = new KeyFeature(null, 0, 0, i);
         }
@@ -123,6 +123,39 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         float[] testing = stats.IQR(cornerList, cornerList.length);
         Log.i(TAG, String.format("Stats found %f as IQR", testing[2]));
+
+        //TEST OUT THE JENKS
+        /*
+        Jenks jenks = new Jenks();
+        jenks.addValue(1.0);
+        jenks.addValue(3.2);
+        jenks.addValue(1.9);
+        jenks.addValue(2.4);
+        jenks.addValue(2.0);
+
+        jenks.addValue(6.7);
+        jenks.addValue(6.9);
+        jenks.addValue(7.2);
+        jenks.addValue(8.1);
+
+
+        jenks.addValue(20.1);
+        jenks.addValue(22.0);
+        jenks.addValue(21.5);
+        jenks.addValue(20.2);
+
+
+
+
+        Jenks.Breaks breaks = jenks.computeBreaks(3);
+
+        int[] results = breaks.breaks;
+
+        for (int i = 0; i < 3; i++) {
+            Log.i(TAG, String.format("Break at %d",results[i]));
+        }
+
+         */
 
         //setContentView(R.layout.camera_view);
     }
@@ -560,7 +593,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             //Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
         }
 
-
+        /*
         //run stats on the points and get the interquartile range
         float[] quartileStats = stats.IQR(cornerList, cornerList.length);
 
@@ -577,6 +610,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 }
             }
         }
+         */
+
 
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
