@@ -154,8 +154,31 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         for (int i = 0; i < 3; i++) {
             Log.i(TAG, String.format("Break at %d",results[i]));
         }
-
          */
+
+        //RUN FINISHED JENKS TEST
+        KeyFeature feat1 = new KeyFeature(null, 0, 0, 2),
+                feat2 = new KeyFeature(null, 0, 0, 1),
+                feat3 = new KeyFeature(null, 0, 0, 1.5),
+                feat4 = new KeyFeature(null, 0, 0, 8),
+                feat5 = new KeyFeature(null, 0, 0, 9.2),
+                feat6 = new KeyFeature(null, 0, 0, 8.4);
+
+        KeyFeature[] testFeatureList = new KeyFeature[6];
+        testFeatureList[0] = feat1;
+        testFeatureList[1] = feat2;
+        testFeatureList[2] = feat3;
+        testFeatureList[3] = feat4;
+        testFeatureList[4] = feat5;
+        testFeatureList[5] = feat6;
+
+        Jenks jenks = new Jenks(testFeatureList);
+        Jenks.Breaks breaks = jenks.computeBreaks(2);
+
+        int[] results = breaks.breaks;
+        for (int i = 0; i < 2; i++) {
+            Log.i(TAG, String.format("Break at %d", results[i]));
+        }
 
         //setContentView(R.layout.camera_view);
     }
