@@ -107,7 +107,7 @@ public class Jenks {
     private Breaks computeBreaks(KeyFeature[] features, int numclass, DoubleFunction transform) {
         //get the number of data we have (here it's number of KeyFeatures)
         int numdata = features.length;
-        Log.i(TAG, String.format("Mr. Jenks found %d data", numdata));
+        //Log.i(TAG, String.format("Mr. Jenks found %d data", numdata));
 
         //if there are no data, return empty array of KeyFeatures and indices
         if (numdata == 0) {
@@ -134,6 +134,7 @@ public class Jenks {
         for (int i = 1; i <= numclass; i++) {
             //fill in second column of mat1 with 1s
             mat1[1][i] = 1;
+            //Log.i(TAG, String.format("Initialized mat1[1][%d] to 1", i));
 
             //fill in second column of mat2 with 0s
             mat2[1][i] = 0;
@@ -155,7 +156,10 @@ public class Jenks {
         //On each iteration of l, we add a displacement number from features to our array and calculate the best arrangement of the array into numclass groups, and
         //we keep calculating the best arrangement after each addition of a number. That way we can store all of the SDCM data of every possible subgroup and use it for
         //comparisons. Hence the 2D arrays.
-        for (int value_addition_it_num = 2; value_addition_it_num <= numdata; value_addition_it_num++) {
+        for (int value_addition_it_num = 2; value_addition_it_num <= numdata; value_addition_it_num++) { //note that if we only pass a KeyFeature that has 1 data pt,
+                                                                                                        //this whole loop will be skipped b/c val_addition_it_num starts off
+                                                                                                        //greater than numdata
+            //Log.i(TAG, String.format("Jenks running value_addition_it_num iteration #%d", value_addition_it_num));
             //FOR EACH SUBSET containing #s from indices 0 thru (l-1) of the original array
 
             //Initialize three doubles to 0: s1, s2, and w
@@ -225,19 +229,23 @@ public class Jenks {
                         //compare that with the running min found for 3 groups for the first 4 values (located at mat2[4][3]), etc.
 
                         //Remember, goal is to have SDCM_ALL be the lowest because that implies minimum variance within groups
-                        if (mat2[value_addition_it_num][num_groups_to_find_min_sdcm_for] /*running min for SDCM_ALL for arranging this grouping (was initialized to infinity)
-                                            so for a given iteration of l it starts at infinity, then surely gets replaced by SDCM_ALL for
+                        if (mat2[value_addition_it_num][num_groups_to_find_min_sdcm_for] /*running min for SDCM_ALL for arranging this grouping into [num_groups_to_find_min_sdcm_for] groups.
+                                            (Was initialized to infinity).
+                                            So for a given iteration of l it starts at infinity, then surely gets replaced by SDCM_ALL for
                                             [(1st), ... , (l-2)th, (l-1)th] [lth], and might be replaced more */ >=
                                 (v + mat2[scdm_finder_for_left_groupings][num_groups_to_find_min_sdcm_for - 1]) /*SDCM_ALL for this sub-arrangement: [(1st), ..., (i4th)] [(i4 + 1)th, ... , (l-1)th, lth]*/
                         ) {
-                            //Store the test breakpt, the current best break index found for this larger grouping, in column l row j of mat1. This means we'll keep
-                            // overriding row two at col l with the break index(or indices if requested groups > 2) that we found to be best for this group (this iteration of l)
+                            //Store the test breakpt, the current best break index found for this larger grouping starting from the right, in column l row j of mat1. This means we'll keep
+                            //overriding col #[value_addition_it_num] at row #[num_groups_to_find_min_scdm] with the far-right break index that we found to be best when grouping the
+                            //[value_addition_it_num] first numbers of the full array into groups of [num_groups_to_find_min_scdm_for]
                             mat1[value_addition_it_num][num_groups_to_find_min_sdcm_for] = test_break_at_plus_two; //thus for each iteration of j 2 or above, we go through and find [numclass] breaks
 
-                            //replace/override slot in row j of mat2 with the min SDCM_ALL we've found for this test grouping (iteration of l) thus far
+                            //Replace/override slot in row #[num_groups_to_find_min_sdcdm_for] of mat2 with the min SDCM_ALL we've found for this test group (the set of the first [value_addition_it_num]
+                            //values in the full array) thus far
                             mat2[value_addition_it_num][num_groups_to_find_min_sdcm_for] =
-                                    v /*sum of squared deviations (SDCM) of this sub-grouping*/
-                                    + mat2[scdm_finder_for_left_groupings][num_groups_to_find_min_sdcm_for - 1] /*SDCM for the last sub-grouping tried*/;
+                                    v /*Sum of squared deviations (SDCM) of this sub-grouping*/
+                                    + mat2[scdm_finder_for_left_groupings][num_groups_to_find_min_sdcm_for - 1] /*SDCM for the set of the first [value_addition_it_num - sub_arrangement_num] values
+                                                                                                                in the full array*/;
                         }
                     }
                 }
@@ -255,28 +263,39 @@ public class Jenks {
             mat2[value_addition_it_num][1] = v;
         }
 
+        //set k to the num of data since that column of mat1 will contain the first breakpoint from the right that we found to be "good"
         int k = numdata;
 
         //create new array of ints to store the breaks
-        int[] kclass = new int[numclass];
+        int[] breakpoints = new int[numclass];
 
         //the last break will always be length of the KeyFeature list-1 (the index of the last KeyFeature)
-        kclass[numclass - 1] = features.length - 1;
+        breakpoints[numclass - 1] = features.length - 1; //if we only passed 1 datum, we'll have array of 2 ints, the second one is set to 0 here
 
         //iterate from the number of classes down thru 2, because we'll have [numclass-1] breaks to store
         for (int j = numclass; j >= 2; j--) {
             //get the break by subtracting 2 from value at row k, column j, which is test_break_at_plus_two, hence the -2
-            int id = (int) (mat1[k][j]) - 2;
+            //The first value extracted at mat1[k][j] will be mat1[numdata][numclass], which is where we stored the first ideal breakpoint from the right when grouping the full array into numclass grps
+            int id = (int) (mat1[k][j]) - 2; //EDGE CASE: only 1 data pt, 2 or more classes requested: the extracted breakpoint is mat1[1][# classes req] - 2 = -1
 
-            //store this break in the breaks array
-            kclass[j - 2] = id;
+            //Log.i(TAG, String.format("id is %d from mat1[%d][%d]", id, k, j));
 
-            //change k to the value at row k, column j - 1
+            //EDGE CASE: if at any point we get a -1 for id, we know that # of data passed was less than # classes requested. return null immediately
+            if (id == -1) {
+                return null;
+            }
+
+            //store this break in the breaks array, starting at the second to last slot
+            breakpoints[j - 2] = id; //EDGE CASE: only 1 data pt: now the first slot of the array will be set to Double.MAX. Will appear as -1 if try to read as int
+
+            //On the next iteration we need to find the second ideal breakpoint from the right when grouping the full array into numclass grps. In other words, we need the best breakpt found
+            //first from the right when splitting the first [id + 1] values of the full array into [j - 1] groups. j will automatically be decremented after this iteration of the loop, but we
+            //need to change k to id + 1. The +1 is due to the fact that the breakpoint values correspond to the last INDEX of a given group, but we're looking for a number of values, not an index
             k = (int) mat1[k][j] - 1;
         }
 
         //make a new instance of Breaks with the appropriate breaks we found and return it
-        return new Breaks(features, kclass);
+        return new Breaks(features, breakpoints);
     }
 
     //interface for abstraction to define a function we want to perform on the passed double
@@ -454,6 +473,27 @@ public class Jenks {
 
             //return average
             return sum / features.length;
+        }
+
+        /**
+         * Get the mean displacement value from a specified subset of an array of KeyFeatures
+         *
+         * @param features the array of KeyFeatures to be analyzed
+         * @param start the starting index for mean extraction
+         * @param end the ending index for mean extraction
+         *
+         * @return
+         */
+        public double mean(KeyFeature[] features, int start, int end) {
+            double sum = 0;
+
+            //add up all the displacement values
+            for (int i = start; i <= end; i++) {
+                sum += features[i].getDispVect();
+            }
+
+            //return average
+            return sum / (end - start + 1);
         }
 
         //convenience API to retrieve number of breaks attached to this Breaks object (length of this.breaks)

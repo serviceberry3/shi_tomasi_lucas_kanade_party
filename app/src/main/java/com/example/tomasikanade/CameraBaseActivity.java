@@ -83,6 +83,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     //instance of MergeSort to serve as our sorter for everything (probably could use a Singleton?)
     MergeSort mergeSort;
 
+    //instance of Jenks to serve as our Jenks Natural Breaks machine for everything
+    Jenks jenks;
+
     //stats
     Stats stats = new Stats();
 
@@ -143,8 +146,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         jenks.addValue(22.0);
         jenks.addValue(21.5);
         jenks.addValue(20.2);
-
-
 
 
         Jenks.Breaks breaks = jenks.computeBreaks(3);
@@ -307,6 +308,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         status = new MatOfByte();
         err = new MatOfFloat();
         mergeSort = new MergeSort();
+
     }
 
     void rotate(Mat src, double angle, Mat dest) {
@@ -363,6 +365,11 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //run the sparse optical flow calculation on this grayscale frame and return the final Mat with the lines drawn
         Mat result = sparseFlow(sceneGrayScale);
 
+        if (result == null) {
+            Log.e(TAG, "sparseFlow returned NULL");
+            return null;
+        }
+
         //get the time it took do do all calculations
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - frameStartTime;
 
@@ -382,7 +389,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 0.5,
                 new Scalar(255, 255, 255),
                 0);
-
          */
 
         //rotate the text so it's facing the right way
@@ -400,7 +406,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 result.rows(),
                 textImg.cols(),
                 textImg.rows()));
-
          */
 
         //Imgproc.cvtColor(textImg, textImg, Imgproc.COLOR_BGRA2GRAY);
@@ -635,7 +640,60 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         }
          */
 
+        //break the key features into two groups based on displacement
+        int numGroups = 2;
 
+        /* RESERVED FOR TESTING
+        KeyFeature[] testing = new KeyFeature[1];
+        testing[0] = new KeyFeature(new Point(2,2), 0,0,3);
+         */
+
+        //Use Jenks API to sort the the displacement data into (for now, 2) groups
+        jenks = new Jenks(cornerList);
+
+        //compute the breakpoints/run the algo
+        Jenks.Breaks breaks = jenks.computeBreaks(2);
+
+        //check to make sure computing breaks was successful
+        if (breaks == null) {
+            Log.e(TAG, "Jenks breaks computation failed, returning now");
+            return null;
+        }
+
+        int[] breakPoints = breaks.breaks;
+
+        if (breakPoints.length != 0) {
+            //Log.i(TAG, String.format("%d features in cornerList, found breakpoint at %d", cornerList.length, breakPoints[0]));
+        }
+
+        double[] means = new double[numGroups];
+        //Log.i(TAG, String.format("Length of means: %d", means.length));
+
+        int currStart = 0;
+
+        if (breakPoints.length > 1) {
+            //once we get the breakpoint, I want to compare the means of the two clusters found to see if they really differ much. If they
+            //don't differ much, the grouping can be ignored
+            for (int i = 0; i < numGroups; i++) {
+                //if this is the first iteration, start index is 0, end index is first int from breakPoint array
+
+                //get the mean for this grouping and store it in means array
+                means[i] = breaks.mean(cornerList, currStart, breakPoints[i]);
+            }
+        }
+
+        //print out the means of the two groups found
+        for (int i=0; i<numGroups; i++) {
+            //Log.i(TAG, String.format("Mean of group %d is %f", i, means[i]));
+        }
+
+        if ((Math.max(means[0], means[1]) / Math.min(means[0], means[1])) >= 2.5) {
+            Log.i(TAG, String.format("DETECTED for %f", means[0]));
+            //If it seems like there's a set of points moving faster relative to everything else, draw a box on the screen that approximates
+            //those points (ALGORITHM SUBJECT TO MODIFICATION)
+            
+
+        }
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
         xAvg1 /= listSize;
