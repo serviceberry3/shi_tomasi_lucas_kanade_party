@@ -61,7 +61,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     //Values needed for the corner detection algorithm Most likely have to tweak them to suit needs. Could also
     //let the application find out the best values by itself.
-    private final static double qualityLevel = 0.35; //.35
+    private final static double qualityLevel = 0.25; //.35
     private final static double minDistance = 10;
     private final static int blockSize = 8;
     private final static boolean useHarrisDetector = false;
@@ -626,7 +626,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         float[] quartileStats = stats.IQR(cornerList, cornerList.length);
 
         if (quartileStats != null) {
-            float outlierCutoff = 11f * quartileStats[2];
+            float outlierCutoff = 10f * quartileStats[2];
 
             float outlierLow = (float) (quartileStats[0] - outlierCutoff);
             float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
@@ -639,6 +639,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             }
         }
          */
+
 
         //break the key features into two groups based on displacement
         int numGroups = 2;
@@ -669,7 +670,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         double[] means = new double[numGroups];
         //Log.i(TAG, String.format("Length of means: %d", means.length));
 
-        int currStart = 0;
+        int currStart = 0, fastGroup, slowGroup;
+        double fastMean, slowMean;
 
         if (breakPoints.length > 1) {
             //once we get the breakpoint, I want to compare the means of the two clusters found to see if they really differ much. If they
@@ -683,15 +685,57 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         }
 
         //print out the means of the two groups found
-        for (int i=0; i<numGroups; i++) {
+        for (int i = 0; i < numGroups; i++) {
             //Log.i(TAG, String.format("Mean of group %d is %f", i, means[i]));
         }
 
-        if ((Math.max(means[0], means[1]) / Math.min(means[0], means[1])) >= 2.5) {
+        //Find which group is the fast and which is slow (for now I'm only doing two groups
+        if (means[0] >= means[1]) {
+            fastMean = means[0];
+            fastGroup = 0;
+            slowGroup = 1;
+            slowMean = means[1];
+        }
+        else {
+            fastMean = means[1];
+            fastGroup = 1;
+            slowGroup = 0;
+            slowMean = means[0];
+        }
+
+        //Check to see if the two groups of points differ greatly in their avg displacement since last frame
+        if (fastMean / slowMean >= 2.65) {
             Log.i(TAG, String.format("DETECTED for %f", means[0]));
             //If it seems like there's a set of points moving faster relative to everything else, draw a box on the screen that approximates
             //those points (ALGORITHM SUBJECT TO MODIFICATION)
-            
+
+            //First, of the grouping of pts that seems to be moving faster, we want to find the most top-left and most top-right points for the rectangle
+
+            //max/min out the rectangle bound to start
+            double left = -Double.MIN_VALUE, top = Double.MAX_VALUE, right = Double.MAX_VALUE, bottom = Double.MIN_VALUE;
+
+            //Loop through the points
+            for (int i = (fastGroup==1) ? 0 : breakPoints[0]; i <= breakPoints[fastGroup]; i++) {
+                //retrieve the x and y coordinates of this OpenCV Point (will be doubles)
+                double thisX = cornerList[i].getPt().x, thisY = cornerList[i].getPt().y;
+
+                if (thisX < right)
+                    right = thisX;
+                if (thisX > left)
+                    left = thisX;
+                if (thisY > bottom)
+                    bottom = thisY;
+                if (thisY < top)
+                    top = thisY;
+            }
+
+            Imgproc.rectangle (
+                    mGray,                          //the image we're looking to draw on
+                    new Point(left, top),        //p1 (top left of rectangle when phone rotated left to landscape)
+                    new Point(right, bottom),       //p2 (bottom right of rect when phone rotated left to landscape)
+                    new Scalar(0, 0, 255),          //Scalar object for color
+                    5                      //Thickness of the line for the rectangle
+            );
 
         }
 
