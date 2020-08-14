@@ -84,6 +84,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     KeyFeature[] cornerList;
 
     List<Point> prevList, nextList, cornersFoundGoingBackList, forwardBackErrorList;
+    List<Byte> byteStatus;
+    ArrayList<Point> nextListCorrected;
 
     //instance of MergeSort to serve as our sorter for everything (probably could use a Singleton?)
     MergeSort mergeSort;
@@ -565,30 +567,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         throwOutWanderingPts();
 
 
-        //get the statuses (statii?) after the algorithm run
-        List<Byte> byteStatus = status.toList();
-
-        //get size of the status list
-        int y = byteStatus.size() - 1;
-
-        //REMOVE CERTAIN PTS BASED ON FORWARD-BACKWARD ERROR - HELPER FXN?
-
-        ArrayList<Point> nextListCorrected = new ArrayList<>();
-
-        //Iterate through the list of differences, find max of x and y difference, if that's greater than 1 then don't add that pt to nextList
-        for (int i = 0; i<y; i++) {
-            double xErr = forwardBackErrorList.get(i).x, yErr = forwardBackErrorList.get(i).y;
-
-            double maxError = Math.max(xErr, yErr);
-            Log.i(TAG, String.format("Max error found to be %f", maxError));
-
-            //If there was a lot of error between forward run of LK and backward run, throw this point out; don't add it to the nextList
-            if (maxError < 0.01) {
-                //NOW we can add this point to nextList
-                nextListCorrected.add(new Point(nextList.get(i).x, nextList.get(i).y));
-            }
-        }
-
         int numNextPts = nextListCorrected.size();
 
         //define a color for our tracking lines
@@ -645,7 +623,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         mergeSort.sort(cornerList, 0, cornerList.length - 1);
 
         //print out the list of displacements(checking to see if sort worked)
-        for (int i = 0; i < y; i++) {
+        for (int i = 0; i < cornerList.length; i++) {
             //Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
         }
 
@@ -740,7 +718,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         for (int i = 0; i < numNextPts /*listSize*/; i++) {
             //get the previous point and current point corresponding to this feature
             Point prevPt = prevList.get(i);
-            Point nextPt = nextList.get(i);
+            Point nextPt = nextListCorrected.get(i);
 
             //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
             double xDiff = prevPt.x - nextPt.x;
@@ -929,10 +907,36 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     }
 
     /**
-     * 
+     * Remove "wandering," obstructed, and/or hard-to-track points from the next features list
      */
     public void throwOutWanderingPts() {
+        //get the statuses (statii?) after the algorithm run
+        byteStatus = status.toList();
 
+        //get size of the status list, which equals the size of the forwardBackErrorList
+        int y = byteStatus.size() - 1;
+
+        //instantiate a new ArrayList for nextListCorrected to prepare for adding valid points
+        nextListCorrected = new ArrayList<>();
+
+        //REMOVE CERTAIN PTS BASED ON FORWARD-BACKWARD ERROR
+
+        //Iterate through the list of differences, find max of x and y difference; if it's >= a certain val, then don't add that pt to nextList
+        for (int i = 0; i < y; i++) {
+            double xErr = forwardBackErrorList.get(i).x, yErr = forwardBackErrorList.get(i).y;
+
+            double maxError = Math.max(xErr, yErr);
+            Log.i(TAG, String.format("Max error found to be %f", maxError));
+
+            //If there was a lot of error between forward run of LK and backward run, throw this point out; don't add it to the nextList
+            if (maxError < 0.01) {
+                //NOW we can add this point to nextList
+                nextListCorrected.add(new Point(nextList.get(i).x, nextList.get(i).y));
+            }
+            else {
+                Log.i(TAG, "Throwing out point");
+            }
+        }
     }
 
 }
