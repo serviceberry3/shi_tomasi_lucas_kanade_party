@@ -573,10 +573,14 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             such cases).
          */
 
-        //here we pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, last frame's Shi-Tomasi pts as prevFeatures,
+        //Here we pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, last frame's Shi-Tomasi pts as prevFeatures,
         //and a MatofPoint nextFeatures which by default is the same as prevFeatures but should be modified
         //NOTE: on first call of sparseFlow(), mPrevGray will = mGray, prevFeatures will hold goodFeatures of current frame, thisFeatures will be empty
         Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //features we track are the ones from goodFeaturesToTrack()
+
+        //To reduce error and noise, we'll also run the algorithm backwards, treating the second frame as the first/original frame and the first frame as the
+        //next frame. Then we'll compare the Shi-Tomasi corner points in the first frame with those supposedly found in the second frame
+        Video.calcOpticalFlowPyrLK(mGray, mPrevGray, thisFeatures, new MatOfPoint2f(), status, err);
 
         //create two lists of points, one of the goodFeatures from previous frame, one of current goodFeatures traced/found by Lucas-Kanade algorithm
         List<Point> prevList = prevFeatures.toList(), nextList = thisFeatures.toList();
@@ -597,7 +601,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //create array of KeyFeatures the size of byteStatus list
         cornerList = new KeyFeature[y];
-
 
         //iterate over all items in the Point Lists and get and store the displacement
         for (int i = 0; i < y /*listSize*/; i++) {
