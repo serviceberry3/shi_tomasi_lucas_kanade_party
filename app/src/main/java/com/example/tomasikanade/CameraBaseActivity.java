@@ -54,10 +54,12 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     //complex-valued vectors and matrices, grayscale or color images, voxel volumes, vector fields, point clouds, tensors, histograms
 
     //use 2 Mats to store the camera image, one in color (RGB), and one black and white
-    private Mat sceneGrayScale, sceneColor, mGray, mPrevGray, image;
+    private Mat sceneGrayScale, sceneColor, mGray, mPrevGray, result, image;
 
 
     private CameraBridgeViewBase mOpenCvCameraView;
+
+    private int frameCounter = 0;
 
     //Values needed for the corner detection algorithm Most likely have to tweak them to suit needs. Could also
     //let the application find out the best values by itself.
@@ -111,21 +113,40 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //make sure screen stays on even if it's not touched for a while
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        cornerList = new KeyFeature[3];
-
-
+        cornerList = new KeyFeature[10];
 
         //TEST OUT THE STATS
-        for (int i=0; i<3; i++) {
+        /*
+        for (int i = 0; i < 3; i++) {
             cornerList[i] = new KeyFeature(null, 0, 0, i);
-        }
+        }*/
+
+        cornerList[0] = new KeyFeature(null, 0, 0, 0.45);
+        cornerList[1] = new KeyFeature(null, 0, 0, 1.60);
+        cornerList[2] = new KeyFeature(null, 0, 0, 2.54);
+        cornerList[3] = new KeyFeature(null, 0, 0, 3.98);
+        cornerList[4] = new KeyFeature(null, 0, 0, 4.12);
+        cornerList[5] = new KeyFeature(null, 0, 0, 5.09);
+        cornerList[6] = new KeyFeature(null, 0, 0, 5.45);
+        cornerList[7] = new KeyFeature(null, 0, 0, 6.97);
+        cornerList[8] = new KeyFeature(null, 0, 0, 6.99);
+        cornerList[9] = new KeyFeature(null, 0, 0, 7.23);
+
 
         for (int i = 0; i < cornerList.length; i++) {
             Log.i(TAG, String.format("Stat testing Disp %f", cornerList[i].getDispVect()));
         }
 
-        float[] testing = stats.IQR(cornerList, cornerList.length);
-        Log.i(TAG, String.format("Stats found %f as IQR", testing[2]));
+        float[] testing = stats.IQR(cornerList, cornerList.length, 0);
+        Log.i(TAG, String.format("Stats found %f as IQR for entire 10-num array", testing[2]));
+
+        float[] testing2 = stats.IQR(cornerList, 4 + 1, 0);
+        Log.i(TAG, String.format("Stats found %f as IQR for 0-4 of array", testing2[2]));
+
+        float[] testing3 = stats.IQR(cornerList, cornerList.length, 5);
+        Log.i(TAG, String.format("Stats found %f as IQR for 5-9 of array", testing3[2]));
+
+
 
         //TEST OUT THE JENKS
         /*
@@ -157,6 +178,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         }
          */
 
+        /*
         //RUN FINISHED JENKS TEST
         KeyFeature feat1 = new KeyFeature(null, 0, 0, 2),
                 feat2 = new KeyFeature(null, 0, 0, 1),
@@ -180,6 +202,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         for (int i = 0; i < 2; i++) {
             Log.i(TAG, String.format("Break at %d", results[i]));
         }
+        
+         */
 
         //setContentView(R.layout.camera_view);
     }
@@ -330,6 +354,18 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //also converting to grayscale makes the contrast between features clearer
         Imgproc.cvtColor(sceneColor, sceneGrayScale, Imgproc.COLOR_BGRA2GRAY);
 
+        /*
+        //only do computations every 5 frames
+        if (frameCounter != 4) {
+            frameCounter++;
+            return result;
+        }
+        else {
+            frameCounter = 0;
+        }
+
+         */
+
         //if the camera is just being loaded, get the Shi-Tomasi good features to track first time
         if (prevFeatures.rows() == 0) {
             Log.i(TAG, "prevFeatures is empty, now populating with Shi-Tomasi");
@@ -363,7 +399,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         }
 
         //run the sparse optical flow calculation on this grayscale frame and return the final Mat with the lines drawn
-        Mat result = sparseFlow(sceneGrayScale);
+        result = sparseFlow(sceneGrayScale);
 
         if (result == null) {
             Log.e(TAG, "sparseFlow returned NULL");
@@ -562,12 +598,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //create array of KeyFeatures the size of byteStatus list
         cornerList = new KeyFeature[y];
 
-        //iterate over all items in the Point Lists
+
+        //iterate over all items in the Point Lists and get and store the displacement
         for (int i = 0; i < y /*listSize*/; i++) {
             //get the previous point and current point corresponding to this feature
             Point prevPt = prevList.get(i);
             Point nextPt = nextList.get(i);
-
+            
             //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
             double xDiff = prevPt.x - nextPt.x;
             double yDiff = prevPt.y - nextPt.y;
@@ -599,18 +636,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 }
             }
 
-            //modify the nextPt a bit to exaggerate it so that we can see the motion lines better (can remove this if desire)
-            Point prevPtExagg = new Point(prevPt.x +  xDiff , prevPt.y + yDiff); //double length of line
-
-            //if (prevPt!=null && nextPt!=null) {
-            if (byteStatus.get(i)==1 && nextPt!=null && prevPt!=null) {
-                //draw out a line on the current grayScale image Mat from the previous point of interest to the location it moved to in this frame
-                Imgproc.line(mGray, nextPt, prevPtExagg, color, 3);
-            }
-
-            //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
-
-            //Imgproc.line(mGray, new Point(10,200), new Point(300,200), color, 3);
         }
 
         //sort all of the points found by the amount they've moved since the last frame
@@ -620,26 +645,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         for (int i = 0; i < y; i++) {
             //Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
         }
-
-        /*
-        //run stats on the points and get the interquartile range
-        float[] quartileStats = stats.IQR(cornerList, cornerList.length);
-
-        if (quartileStats != null) {
-            float outlierCutoff = 10f * quartileStats[2];
-
-            float outlierLow = (float) (quartileStats[0] - outlierCutoff);
-            float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
-
-            for (int i = 0; i < y; i++) {
-                float thisDisp = (float) cornerList[i].getDispVect();
-                if (thisDisp >= outlierHigh) {
-                    Log.i(TAG, String.format("Found high outlier with disp %f", thisDisp));
-                }
-            }
-        }
-         */
-
 
         //break the key features into two groups based on displacement
         int numGroups = 2;
@@ -686,10 +691,81 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //print out the means of the two groups found
         for (int i = 0; i < numGroups; i++) {
-            //Log.i(TAG, String.format("Mean of group %d is %f", i, means[i]));
+            Log.i(TAG, String.format("Mean of group %d is %f", i, means[i]));
         }
 
-        //Find which group is the fast and which is slow (for now I'm only doing two groups
+        //GET READY TO DRAW THE DISPLACEMENT LINES - we'll treat the two groups (high and low) separately and remove any outliers within them first
+        int start = 0;
+        for (int i = 0; i < numGroups; i++) {
+            //make sure this breakpoint exists
+            if ((breakPoints.length >= i + 1)) {
+                int n;
+                Log.i(TAG, String.format("Removing outliers for group #%d", i));
+
+                //run stats on the points and get the interquartile range
+                Log.i(TAG, String.format("We have a cornerList of len %d, calling IQR(list, n: %d, start: %d)", cornerList.length, breakPoints[i] + 1, start));
+
+                float[] quartileStats = stats.IQR(cornerList, breakPoints[i] + 1, start);
+
+                if (quartileStats != null) {
+                    //Multiply the IQR by a certain number (standard is 1.5) to get the outlier cutoff deviation from Q1 and Q3
+                    float outlierCutoff = 1.5f * quartileStats[2];
+
+                    //find the non-outlier range (we really only care about the high cutoff, though
+                    float outlierLow = (float) (quartileStats[0] - outlierCutoff);
+                    float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
+
+                    for (int j = start; j <= breakPoints[i]; j++) {
+                        float thisDisp = (float) cornerList[j].getDispVect();
+
+
+                        if (thisDisp >= outlierHigh) {
+                            Log.i(TAG, String.format("Found high outlier in group %d with disp %f", i, thisDisp));
+                        }
+                    }
+
+                    //kick out the outliers by invalidating them
+                    stats.rmOutliers(cornerList, outlierHigh, 0, cornerList.length - 1);
+
+                    Log.i(TAG, String.format("Now setting start to %d", breakPoints[i] + 1));
+                    start = breakPoints[i] + 1;
+                }
+            }
+        }
+
+
+        //iterate over all the points in cornerList and, if they're valid, draw the displacement lines
+        for (int i = 0; i < y /*listSize*/; i++) {
+            //get the previous point and current point corresponding to this feature
+            Point prevPt = prevList.get(i);
+            Point nextPt = nextList.get(i);
+
+            //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
+            double xDiff = prevPt.x - nextPt.x;
+            double yDiff = prevPt.y - nextPt.y;
+
+            KeyFeature thisFeature = cornerList[i];
+
+            if (thisFeature.isValid() ) {
+                //modify this current pt a bit to exaggerate it so that we can see the motion lines better (can remove this if desire)
+                Point prevPtExagg = new Point(prevPt.x + xDiff, prevPt.y + yDiff); //double length of line
+
+
+                //if (prevPt!=null && nextPt!=null) {
+                if (byteStatus.get(i) == 1 && prevPtExagg != null) {
+                    //draw out a line on the current grayScale image Mat from the previous point of interest to the location it moved to in this frame
+                    Imgproc.line(mGray, nextPt, prevPtExagg, color, 3);
+                }
+
+            }
+
+            //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
+
+            //Imgproc.line(mGray, new Point(10,200), new Point(300,200), color, 3);
+        }
+
+
+        //Find which group is the fast and which is slow (for now I'm only doing two groups)
         if (means[0] >= means[1]) {
             fastMean = means[0];
             fastGroup = 0;
@@ -738,6 +814,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             );
 
         }
+        //if they don't differ greatly, don't draw the rectangle
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
         xAvg1 /= listSize;

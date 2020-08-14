@@ -20,6 +20,8 @@
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/KeyFeature.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/KeyFeature.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/Stats.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/Stats.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,7 +66,7 @@
     <property name="project.structure.last.edited" value="Dependencies" />
     <property name="project.structure.proportion" value="0.17" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="AndroidSdkUpdater" />
+    <property name="settings.editor.selected.configurable" value="inlay.hints.JAVA" />
   </component>
   <component name="RunManager">
     <configuration default="true" type="AndroidJUnit" factoryName="Android JUnit">
@@ -160,22 +162,26 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="595" y="1422" width="949" height="1101" key="FileChooserDialogImpl/0.54.2160.3786@0.54.2160.3786" timestamp="1596934074730" />
-    <state width="2160" height="724" key="GridCell.Tab.0.bottom" timestamp="1597331019243">
+    <state width="2160" height="724" key="GridCell.Tab.0.bottom" timestamp="1597360893217">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1597331019243" />
-    <state width="2160" height="724" key="GridCell.Tab.0.center" timestamp="1597331019243">
+    <state width="2160" height="724" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893217" />
+    <state width="2160" height="724" key="GridCell.Tab.0.center" timestamp="1597360893217">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1597331019243" />
-    <state width="2160" height="724" key="GridCell.Tab.0.left" timestamp="1597331019242">
+    <state width="2160" height="724" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893217" />
+    <state width="2160" height="724" key="GridCell.Tab.0.left" timestamp="1597360893216">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1597331019242" />
-    <state width="2160" height="724" key="GridCell.Tab.0.right" timestamp="1597331019243">
+    <state width="2160" height="724" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893216" />
+    <state width="2160" height="724" key="GridCell.Tab.0.right" timestamp="1597360893217">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1597331019243" />
+    <state width="2160" height="724" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893217" />
+    <state x="76" y="1217" width="2008" height="1484" key="SettingsEditor" timestamp="1597361557100">
+      <screen x="0" y="54" width="2160" height="3786" />
+    </state>
+    <state x="76" y="1217" width="2008" height="1484" key="SettingsEditor/0.54.2160.3786@0.54.2160.3786" timestamp="1597361557100" />
     <state x="412" y="1586" key="com.intellij.ide.util.TipDialog" timestamp="1597330887674">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
