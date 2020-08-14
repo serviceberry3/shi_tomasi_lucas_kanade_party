@@ -11,6 +11,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="143ff5bf-63d4-4a58-ac93-529f995372ad" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/modules/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/app/app.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/openCVLibrary341/openCVLibrary341.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/openCVLibrary341/openCVLibrary341.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" afterDir="false" />
     </list>
@@ -153,30 +155,30 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="595" y="1422" width="949" height="1101" key="FileChooserDialogImpl/0.54.2160.3786@0.54.2160.3786" timestamp="1596934074730" />
-    <state width="2160" height="724" key="GridCell.Tab.0.bottom" timestamp="1597360893217">
+    <state width="2160" height="724" key="GridCell.Tab.0.bottom" timestamp="1597418008553">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893217" />
-    <state width="2160" height="724" key="GridCell.Tab.0.center" timestamp="1597360893217">
+    <state width="2160" height="724" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008553" />
+    <state width="2160" height="724" key="GridCell.Tab.0.center" timestamp="1597418008552">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893217" />
-    <state width="2160" height="724" key="GridCell.Tab.0.left" timestamp="1597360893216">
+    <state width="2160" height="724" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008552" />
+    <state width="2160" height="724" key="GridCell.Tab.0.left" timestamp="1597418008551">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893216" />
-    <state width="2160" height="724" key="GridCell.Tab.0.right" timestamp="1597360893217">
+    <state width="2160" height="724" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008551" />
+    <state width="2160" height="724" key="GridCell.Tab.0.right" timestamp="1597418008552">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1597360893217" />
+    <state width="2160" height="724" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008552" />
     <state x="76" y="1217" width="2008" height="1484" key="SettingsEditor" timestamp="1597361557100">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="76" y="1217" width="2008" height="1484" key="SettingsEditor/0.54.2160.3786@0.54.2160.3786" timestamp="1597361557100" />
-    <state x="412" y="1586" key="com.intellij.ide.util.TipDialog" timestamp="1597330887674">
+    <state x="412" y="1576" key="com.intellij.ide.util.TipDialog" timestamp="1597412354091">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state x="412" y="1586" key="com.intellij.ide.util.TipDialog/0.54.2160.3786@0.54.2160.3786" timestamp="1597330887674" />
+    <state x="412" y="1576" key="com.intellij.ide.util.TipDialog/0.54.2160.3786@0.54.2160.3786" timestamp="1597412354091" />
     <state width="1200" height="848" key="javadoc.popup" timestamp="1596648150402">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>

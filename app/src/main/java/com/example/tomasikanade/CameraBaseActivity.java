@@ -39,6 +39,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 
+import java.lang.reflect.Array;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
@@ -363,7 +364,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         else {
             frameCounter = 0;
         }
-
          */
 
         //if the camera is just being loaded, get the Shi-Tomasi good features to track first time
@@ -541,8 +541,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 }
             }
 
-
-
             //the MatofPoint class in OpenCV is a 2D array of points. We can add all of our Shi-Tomasi points into our MatofPoint instance
             //by calling fromArray() on the array of Points
             features.fromArray(pointsToTrack); //the MatofPoint '''features''' is now populated with the Shi-Tomasi points
@@ -550,8 +548,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             //set prevFeatures equal to features (since we only have one newly created MatofPoint), so equal to list of points created above
             prevFeatures.fromList(features.toList());
         }
-
-
          */
 
         //set nextFeatures equal to prevFeatures. I think we have to do this as safety thing in case some of nextFeatures can't be populated by
@@ -578,17 +574,61 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //NOTE: on first call of sparseFlow(), mPrevGray will = mGray, prevFeatures will hold goodFeatures of current frame, thisFeatures will be empty
         Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //features we track are the ones from goodFeaturesToTrack()
 
+        MatOfPoint2f cornersFoundGoingBackwards = new MatOfPoint2f();
+
         //To reduce error and noise, we'll also run the algorithm backwards, treating the second frame as the first/original frame and the first frame as the
         //next frame. Then we'll compare the Shi-Tomasi corner points in the first frame with those supposedly found in the second frame
-        Video.calcOpticalFlowPyrLK(mGray, mPrevGray, thisFeatures, new MatOfPoint2f(), status, err);
+        Video.calcOpticalFlowPyrLK(mGray, mPrevGray, thisFeatures, cornersFoundGoingBackwards, status, err);
+
+        MatOfPoint2f difference = new MatOfPoint2f();
+
+        Log.i(TAG, String.format("Prevfeatures has %d columns, %d rows. Cornersfoundback has %d col, %d row", prevFeatures.cols(),
+                prevFeatures.rows(),
+                cornersFoundGoingBackwards.cols(),
+                cornersFoundGoingBackwards.rows()));
+
+        //subtract the Mat containing features found in last frame from directly running Shi-Tomasi from Mat containing features found in last frame
+        //by running LK backwards on features found in this frame to get the forward-backward error. This error will help us determine whether we should
+        //trust the supposed points tracked by LK into this frame
+        Core.subtract(prevFeatures, cornersFoundGoingBackwards, difference);
+
+        Log.i(TAG, String.format("Difference initially has %d columns, %d rows.", difference.cols(), difference.rows()));
+
+        //Convert the difference matrix into a matrix with just two rows for easy iteration
+        //difference.reshape(-1, 2);
+
+        Log.i(TAG, String.format("Difference has %d columns, %d rows.", difference.cols(), difference.rows()));
+
+        Log.i(TAG, String.format("Value from difference is %f, %f", difference.toList().get(0).x, difference.toList().get(0).y));
 
         //create two lists of points, one of the goodFeatures from previous frame, one of current goodFeatures traced/found by Lucas-Kanade algorithm
-        List<Point> prevList = prevFeatures.toList(), nextList = thisFeatures.toList();
+        List<Point> prevList = prevFeatures.toList(), nextList = thisFeatures.toList(), cornersFoundGoingBackList = cornersFoundGoingBackwards.toList(),
+        forwardBackErrorList = difference.toList();
 
         //get the statuses (statii?) after the algorithm run
         List<Byte> byteStatus = status.toList();
 
         int y = byteStatus.size() - 1;
+
+        //REMOVE CERTAIN PTS BASED ON FORWARD-BACKWARD ERROR
+
+        ArrayList<Point> nextListCorrected = new ArrayList<>();
+
+        //Iterate through the list of differences, find max of x and y difference, if that's greater than 1 then don't add that pt to nextList
+        for (int i = 0; i<y; i++) {
+            double xErr = forwardBackErrorList.get(i).x, yErr = forwardBackErrorList.get(i).y;
+
+            double maxError = Math.max(xErr, yErr);
+            Log.i(TAG, String.format("Max error found to be %f", maxError));
+
+            //If there was a lot of error between forward run of LK and backward run, throw this point out; don't add it to the nextList
+            if (maxError < 0.01) {
+                //NOW we can add this point to nextList
+                nextListCorrected.add(new Point(nextList.get(i).x, nextList.get(i).y));
+            }
+        }
+
+        int numNextPts = nextListCorrected.size();
 
         //define a color for our tracking lines
         Scalar color = new Scalar(255, 0, 0);
@@ -600,13 +640,13 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         int listSize = prevList.size();
 
         //create array of KeyFeatures the size of byteStatus list
-        cornerList = new KeyFeature[y];
+        cornerList = new KeyFeature[numNextPts];
 
         //iterate over all items in the Point Lists and get and store the displacement
-        for (int i = 0; i < y /*listSize*/; i++) {
+        for (int i = 0; i < numNextPts /*listSize*/; i++) {
             //get the previous point and current point corresponding to this feature
             Point prevPt = prevList.get(i);
-            Point nextPt = nextList.get(i);
+            Point nextPt = nextListCorrected.get(i);  //***CHECKKKK
             
             //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
             double xDiff = prevPt.x - nextPt.x;
@@ -638,7 +678,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                     test = true;
                 }
             }
-
         }
 
         //sort all of the points found by the amount they've moved since the last frame
@@ -738,7 +777,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
 
         //iterate over all the points in cornerList and, if they're valid, draw the displacement lines
-        for (int i = 0; i < y /*listSize*/; i++) {
+        for (int i = 0; i < numNextPts /*listSize*/; i++) {
             //get the previous point and current point corresponding to this feature
             Point prevPt = prevList.get(i);
             Point nextPt = nextList.get(i);
