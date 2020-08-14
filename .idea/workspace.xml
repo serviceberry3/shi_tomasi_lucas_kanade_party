@@ -11,8 +11,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="143ff5bf-63d4-4a58-ac93-529f995372ad" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/modules/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/app/app.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/openCVLibrary341/openCVLibrary341.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/openCVLibrary341/openCVLibrary341.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/tomasikanade/CameraBaseActivity.java" afterDir="false" />
     </list>
@@ -55,7 +53,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="android.sdk.path" value="$USER_HOME$/Android/Sdk" />
-    <property name="last_opened_file_path" value="$USER_HOME$/Downloads/opticalflow-opencv-android-master" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../android_native_win_buff" />
     <property name="project.structure.last.edited" value="Dependencies" />
     <property name="project.structure.proportion" value="0.17" />
     <property name="project.structure.side.proportion" value="0.2" />
@@ -151,26 +149,26 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="551" y="1446" width="1048" height="1026" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.54.2160.3786@0.54.2160.3786" timestamp="1596652305820" />
-    <state x="595" y="1422" width="949" height="1101" key="FileChooserDialogImpl" timestamp="1596934074730">
+    <state x="595" y="1412" width="949" height="1101" key="FileChooserDialogImpl" timestamp="1597438141052">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state x="595" y="1422" width="949" height="1101" key="FileChooserDialogImpl/0.54.2160.3786@0.54.2160.3786" timestamp="1596934074730" />
-    <state width="2160" height="724" key="GridCell.Tab.0.bottom" timestamp="1597418008553">
+    <state x="595" y="1412" width="949" height="1101" key="FileChooserDialogImpl/0.54.2160.3786@0.54.2160.3786" timestamp="1597438141052" />
+    <state width="2160" height="227" key="GridCell.Tab.0.bottom" timestamp="1597439888237">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008553" />
-    <state width="2160" height="724" key="GridCell.Tab.0.center" timestamp="1597418008552">
+    <state width="2160" height="227" key="GridCell.Tab.0.bottom/0.54.2160.3786@0.54.2160.3786" timestamp="1597439888237" />
+    <state width="2160" height="227" key="GridCell.Tab.0.center" timestamp="1597439888237">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008552" />
-    <state width="2160" height="724" key="GridCell.Tab.0.left" timestamp="1597418008551">
+    <state width="2160" height="227" key="GridCell.Tab.0.center/0.54.2160.3786@0.54.2160.3786" timestamp="1597439888237" />
+    <state width="2160" height="227" key="GridCell.Tab.0.left" timestamp="1597439888236">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008551" />
-    <state width="2160" height="724" key="GridCell.Tab.0.right" timestamp="1597418008552">
+    <state width="2160" height="227" key="GridCell.Tab.0.left/0.54.2160.3786@0.54.2160.3786" timestamp="1597439888236" />
+    <state width="2160" height="227" key="GridCell.Tab.0.right" timestamp="1597439888237">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state width="2160" height="724" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1597418008552" />
+    <state width="2160" height="227" key="GridCell.Tab.0.right/0.54.2160.3786@0.54.2160.3786" timestamp="1597439888237" />
     <state x="76" y="1217" width="2008" height="1484" key="SettingsEditor" timestamp="1597361557100">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
@@ -187,9 +185,9 @@
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
     <state x="454" y="1252" width="1231" height="1428" key="psd.add.module.dependency.panel.dimension/0.54.2160.3786@0.54.2160.3786" timestamp="1596567731191" />
-    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup" timestamp="1597341202732">
+    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup" timestamp="1597439033168">
       <screen x="0" y="54" width="2160" height="3786" />
     </state>
-    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup/0.54.2160.3786@0.54.2160.3786" timestamp="1597341202732" />
+    <state x="358" y="931" width="1440" height="2556" key="search.everywhere.popup/0.54.2160.3786@0.54.2160.3786" timestamp="1597439033168" />
   </component>
 </project>

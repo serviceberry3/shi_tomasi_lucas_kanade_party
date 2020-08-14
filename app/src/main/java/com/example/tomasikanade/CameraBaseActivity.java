@@ -83,6 +83,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     List<Point> points;
     KeyFeature[] cornerList;
 
+    List<Point> prevList, nextList, cornersFoundGoingBackList, forwardBackErrorList;
+
     //instance of MergeSort to serve as our sorter for everything (probably could use a Singleton?)
     MergeSort mergeSort;
 
@@ -555,62 +557,21 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //nextFeatures.fromArray(prevFeatures.toArray());
 
 
-        /*run the Lucas-Kanade algo
-        @param prevImg – first 8-bit input image or pyramid constructed by buildOpticalFlowPyramid()
-        @param nextImg – second input image or pyramid of the same size and the same type as prevImg.
-        @param prevPts – vector of 2D points for which the flow needs to be found; point coordinates must be single-precision floats.
-            I think this is where we feed in Shi-Tomasi points
-        @param nextPts – output vector of 2D points (w/single-precision float coords) containing calculated new
-            positions of input features in the 2nd image; when OPTFLOW_USE_INITIAL_FLOW flag is passed, vector must have same size as input
-        @param status – output status vector (of unsigned chars); each element of the vector is set to 1 if the flow for the corresponding
-            features has been found, otherwise, it is set to 0.
-        @param err – output vector of errors; each element of the vector is set to an error for the corresponding feature, type of the error
-            measure can be set in flags parameter; if the flow wasn’t found then the error is not defined (use the status parameter to find
-            such cases).
-         */
 
-        //Here we pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, last frame's Shi-Tomasi pts as prevFeatures,
-        //and a MatofPoint nextFeatures which by default is the same as prevFeatures but should be modified
-        //NOTE: on first call of sparseFlow(), mPrevGray will = mGray, prevFeatures will hold goodFeatures of current frame, thisFeatures will be empty
-        Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //features we track are the ones from goodFeaturesToTrack()
+        //run the LK algorithm forwards and backwards
+        lucasKanadeForwardBackward();
 
-        MatOfPoint2f cornersFoundGoingBackwards = new MatOfPoint2f();
+        //throw out points that don't match between last frame and this frame
+        throwOutWanderingPts();
 
-        //To reduce error and noise, we'll also run the algorithm backwards, treating the second frame as the first/original frame and the first frame as the
-        //next frame. Then we'll compare the Shi-Tomasi corner points in the first frame with those supposedly found in the second frame
-        Video.calcOpticalFlowPyrLK(mGray, mPrevGray, thisFeatures, cornersFoundGoingBackwards, status, err);
-
-        MatOfPoint2f difference = new MatOfPoint2f();
-
-        Log.i(TAG, String.format("Prevfeatures has %d columns, %d rows. Cornersfoundback has %d col, %d row", prevFeatures.cols(),
-                prevFeatures.rows(),
-                cornersFoundGoingBackwards.cols(),
-                cornersFoundGoingBackwards.rows()));
-
-        //subtract the Mat containing features found in last frame from directly running Shi-Tomasi from Mat containing features found in last frame
-        //by running LK backwards on features found in this frame to get the forward-backward error. This error will help us determine whether we should
-        //trust the supposed points tracked by LK into this frame
-        Core.subtract(prevFeatures, cornersFoundGoingBackwards, difference);
-
-        Log.i(TAG, String.format("Difference initially has %d columns, %d rows.", difference.cols(), difference.rows()));
-
-        //Convert the difference matrix into a matrix with just two rows for easy iteration
-        //difference.reshape(-1, 2);
-
-        Log.i(TAG, String.format("Difference has %d columns, %d rows.", difference.cols(), difference.rows()));
-
-        Log.i(TAG, String.format("Value from difference is %f, %f", difference.toList().get(0).x, difference.toList().get(0).y));
-
-        //create two lists of points, one of the goodFeatures from previous frame, one of current goodFeatures traced/found by Lucas-Kanade algorithm
-        List<Point> prevList = prevFeatures.toList(), nextList = thisFeatures.toList(), cornersFoundGoingBackList = cornersFoundGoingBackwards.toList(),
-        forwardBackErrorList = difference.toList();
 
         //get the statuses (statii?) after the algorithm run
         List<Byte> byteStatus = status.toList();
 
+        //get size of the status list
         int y = byteStatus.size() - 1;
 
-        //REMOVE CERTAIN PTS BASED ON FORWARD-BACKWARD ERROR
+        //REMOVE CERTAIN PTS BASED ON FORWARD-BACKWARD ERROR - HELPER FXN?
 
         ArrayList<Point> nextListCorrected = new ArrayList<>();
 
@@ -775,7 +736,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             }
         }
 
-
         //iterate over all the points in cornerList and, if they're valid, draw the displacement lines
         for (int i = 0; i < numNextPts /*listSize*/; i++) {
             //get the previous point and current point corresponding to this feature
@@ -893,4 +853,86 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //return the final Mat
         return mGray;
     }
+
+    /**
+     * Run the Lucas-Kanade algorithm on the previous frame and this frame, both tracking last frame's Shi-Tomasi pts forward to this frame and tracking
+     * those found LK pts backward to the last frame to minimize error due to object obstruction, noise, etc.
+     */
+    public void lucasKanadeForwardBackward() {
+        /**
+         * Run the Lucas-Kanade algo with the following passed for the parameters:
+         *
+         * We pass the previous gray Mat as the first 8-bit image, the current gray Mat as second image, last frame's Shi-Tomasi pts as prevFeatures,
+         * and a MatofPoint nextFeatures which by default is the same as prevFeatures but should be modified
+         *
+         * NOTE: on first call of sparseFlow(), mPrevGray will = mGray, prevFeatures will hold goodFeatures of current frame, thisFeatures will be empty
+         *
+         * @param prevImg – first 8-bit input image or pyramid constructed by buildOpticalFlowPyramid()
+         * @param prevPts – vector of 2D points for which the flow needs to be found; point coordinates must be single-precision floats.
+         *       I think this is where we feed in Shi-Tomasi points
+         * @param nextPts – output vector of 2D points (w/single-precision float coords) containing calculated new
+         *       positions of input features in the 2nd image; when OPTFLOW_USE_INITIAL_FLOW flag is passed, vector must have same size as input
+         * @param status – output status vector (of unsigned chars); each element of the vector is set to 1 if the flow for the corresponding
+         *       features has been found, otherwise, it is set to 0.
+         * @param err – output vector of errors; each element of the vector is set to an error for the corresponding feature, type of the error
+         *             measure can be set in flags parameter; if the flow wasn’t found then the error is not defined (use the status parameter to find
+         *             such cases).
+         */
+        Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //Features we track are the ones from goodFeaturesToTrack()
+
+        //Create new matrix of (x,y) float coords to store the result of running LK algorithm backwards
+        MatOfPoint2f cornersFoundGoingBackwards = new MatOfPoint2f();
+
+        //To reduce error and noise, we'll also run the algorithm backwards, treating the points found by LK in second frame as the first/original set of pts
+        //and the first frame as the next frame. Then we'll compare the backtracked LK-generated points in the first frame with those originally generated in the
+        //first frame by Shi-Tomasi. If there's a discrepancy for one of the points, that means that point probably was obstructed, etc. in the second frame,
+        //which caused LK to find a different point for it. Thus the backtracked LK point found will differ greatly from the original S-T point. In this case, the
+        //forward trajectory and displacement from last frame to this frame is invalid for that point and should be thrown out.
+        Video.calcOpticalFlowPyrLK(mGray, mPrevGray, thisFeatures, cornersFoundGoingBackwards, status, err);
+
+        //Create new matrix of (x, y) float coords to store difference between points found
+        MatOfPoint2f difference = new MatOfPoint2f();
+
+        Log.i(TAG, String.format("Prevfeatures has %d columns, %d rows. Cornersfoundback has %d col, %d row", prevFeatures.cols(),
+                prevFeatures.rows(),
+                cornersFoundGoingBackwards.cols(),
+                cornersFoundGoingBackwards.rows()));
+
+        //Subtract [the Mat containing features found in last frame by directly running Shi-Tomasi] from [Mat containing features found in last frame
+        //by running LK backwards on LK-tracked points found in this frame] to get the forward-backward error. This error will help us determine whether we should
+        //trust the supposed points tracked by LK into this frame, because if a pt was found in this frame but not backtracked to the previous frame then it should
+        //probably be thrown out
+        Core.subtract(prevFeatures, cornersFoundGoingBackwards, difference);
+
+        Log.i(TAG, String.format("Difference initially has %d columns, %d rows.", difference.cols(), difference.rows()));
+
+        //Convert the difference matrix into a matrix with just two rows for easy iteration
+        //difference.reshape(-1, 2);
+
+        Log.i(TAG, String.format("Difference has %d columns, %d rows.", difference.cols(), difference.rows()));
+
+        Log.i(TAG, String.format("Value from difference is %f, %f", difference.toList().get(0).x, difference.toList().get(0).y));
+
+        //Create (x,y) List of pts for the goodFeatures from previous frame
+        prevList = prevFeatures.toList();
+
+        //Create (x,y) List of pts for the current goodFeatures traced/found by FORWARD Lucas-Kanade algorithm
+        nextList = thisFeatures.toList();
+
+        //Create (x,y) List of pts for the goodFeatures found by BACKWARD Lucas-Kanade algorithm
+        cornersFoundGoingBackList = cornersFoundGoingBackwards.toList();
+
+        //Create (x,y) List of pts for difference between the actual Shi-Tomasi corner pts in the last frame and the ones supposedly found by LK in this frame
+        forwardBackErrorList = difference.toList();
+
+        //Now everything has been prepared for further processing; namely, the points have been prepared for forward-backward error removal/filtering.
+    }
+
+    /**
+     * 
+     */
+    public void throwOutWanderingPts() {
+
+    }
+
 }
