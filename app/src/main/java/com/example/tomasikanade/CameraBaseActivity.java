@@ -63,6 +63,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     private int frameCounter = 0, discards, numPts;
 
+    private double[]means;
+
     //break the key features into two groups based on displacement
     private final int numGroups = 2;
 
@@ -366,7 +368,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         Imgproc.warpAffine(src, dest, r, new Size(len, len));
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         discards = 0;
@@ -595,11 +597,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             return null;
         }
 
-        double[] means = new double[numGroups];
+        means = new double[numGroups];
         //Log.i(TAG, String.format("Length of means: %d", means.length));
 
-        int currStart = 0, fastGroup, slowGroup;
-        double fastMean, slowMean;
+        int currStart = 0;
 
         if (breakPoints.length > 1) {
             //once we get the breakpoint, I want to compare the means of the two clusters found to see if they really differ much. If they
@@ -624,59 +625,9 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         drawDisplacementLines();
 
 
+        //if there's an area in the image that's moving faster than the rest, let's draw a rectangle around ti
+        drawMotionRectangle();
 
-        /*
-        //Find which group is the fast and which is slow (for now I'm only doing two groups)
-        if (means[0] >= means[1]) {
-            fastMean = means[0];
-            fastGroup = 0;
-            slowGroup = 1;
-            slowMean = means[1];
-        }
-        else {
-            fastMean = means[1];
-            fastGroup = 1;
-            slowGroup = 0;
-            slowMean = means[0];
-        }
-
-        //Check to see if the two groups of points differ greatly in their avg displacement since last frame
-        if (fastMean / slowMean >= 2.65) {
-            Log.i(TAG, String.format("DETECTED for %f", means[0]));
-            //If it seems like there's a set of points moving faster relative to everything else, draw a box on the screen that approximates
-            //those points (ALGORITHM SUBJECT TO MODIFICATION)
-
-            //First, of the grouping of pts that seems to be moving faster, we want to find the most top-left and most top-right points for the rectangle
-
-            //max/min out the rectangle bound to start
-            double left = -Double.MIN_VALUE, top = Double.MAX_VALUE, right = Double.MAX_VALUE, bottom = Double.MIN_VALUE;
-
-            //Loop through the points
-            for (int i = (fastGroup==1) ? 0 : breakPoints[0]; i <= breakPoints[fastGroup]; i++) {
-                //retrieve the x and y coordinates of this OpenCV Point (will be doubles)
-                double thisX = cornerList[i].getPt().x, thisY = cornerList[i].getPt().y;
-
-                if (thisX < right)
-                    right = thisX;
-                if (thisX > left)
-                    left = thisX;
-                if (thisY > bottom)
-                    bottom = thisY;
-                if (thisY < top)
-                    top = thisY;
-            }
-
-            Imgproc.rectangle (
-                    mGray,                          //the image we're looking to draw on
-                    new Point(left, top),        //p1 (top left of rectangle when phone rotated left to landscape)
-                    new Point(right, bottom),       //p2 (bottom right of rect when phone rotated left to landscape)
-                    new Scalar(0, 0, 255),          //Scalar object for color
-                    5                      //Thickness of the line for the rectangle
-            );
-
-        }
-        //if they don't differ greatly, don't draw the rectangle
-         */
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
         xAvg1 /= listSize;
@@ -992,4 +943,68 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         }
     }
 
+    public void drawMotionRectangle() {
+        int fastGroup, slowGroup;
+        double fastMean, slowMean;
+
+        //Find which group is the fast and which is slow (for now I'm only doing two groups)
+        if (means[0] >= means[1]) {
+            fastMean = means[0];
+            fastGroup = 0;
+            slowGroup = 1;
+            slowMean = means[1];
+        }
+        else {
+            fastMean = means[1];
+            fastGroup = 1;
+            slowGroup = 0;
+            slowMean = means[0];
+        }
+
+        //Check to see if the two groups of points differ greatly in their avg displacement since last frame
+        if (fastMean / slowMean >= 1.85) { //2.65
+            Log.i(TAG, String.format("DETECTED for %f", means[0]));
+            //If it seems like there's a set of points moving faster relative to everything else, draw a box on the screen that approximates
+            //those points (ALGORITHM SUBJECT TO MODIFICATION)
+
+            //First, of the grouping of pts that seems to be moving faster, we want to find the most top-left and most top-right points for the rectangle
+
+            //max/min out the rectangle bound to start
+            double left = Double.MIN_VALUE, top = Double.MAX_VALUE, right = Double.MAX_VALUE, bottom = Double.MIN_VALUE;
+
+            //Loop through the points
+            for (int i = ((fastGroup==0) ? 0 : breakPoints[0] + 1); i <= breakPoints[fastGroup]; i++) {
+                //retrieve the x and y coordinates of this OpenCV Point (will be doubles)
+                double thisX = cornerListSorted[i].getPt().x, thisY = cornerListSorted[i].getPt().y;
+
+                if (thisX < right)
+                    right = thisX;
+                if (thisX > left)
+                    left = thisX;
+                if (thisY > bottom)
+                    bottom = thisY;
+                if (thisY < top)
+                    top = thisY;
+            }
+
+            if (left == Double.MIN_VALUE)
+                left = right;
+            if (right == Double.MAX_VALUE)
+                right = left;
+            if (top == Double.MAX_VALUE)
+                top = bottom;
+            if (bottom == Double.MIN_VALUE)
+                bottom = top;
+
+            Imgproc.rectangle (
+                    mGray,                          //the image we're looking to draw on
+                    new Point(left, top),        //p1 (top left of rectangle when phone rotated left to landscape)
+                    new Point(right, bottom),       //p2 (bottom right of rect when phone rotated left to landscape)
+                    new Scalar(0, 0, 255),          //Scalar object for color
+                    5                      //Thickness of the line for the rectangle
+            );
+
+        }
+        //if they don't differ greatly, don't draw the rectangle
+    }
 }
