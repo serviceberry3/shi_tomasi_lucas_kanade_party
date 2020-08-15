@@ -436,7 +436,7 @@ public class Jenks {
          * @param classIndex
          * @return the maximum value (inclusive) of the given class
          */
-        public  double getClassMax(int classIndex) {
+        public double getClassMax(int classIndex) {
             return sortedFeatures[breaks[classIndex]].getDispVect();
         }
 
@@ -447,7 +447,7 @@ public class Jenks {
          * @param classIndex
          * @return
          */
-        public  int getClassCount(int classIndex) {
+        public int getClassCount(int classIndex) {
             if (classIndex == 0) {
                 return breaks[0] + 1;
             }
@@ -462,7 +462,7 @@ public class Jenks {
          *
          * @param features the array of KeyFeatures from which we want to calculate mean displacement
          */
-        private double mean(KeyFeature[] features) {
+        public static double mean(KeyFeature[] features) {
             //start off the sum at 0
             double sum = 0;
 
@@ -484,7 +484,7 @@ public class Jenks {
          *
          * @return
          */
-        public double mean(KeyFeature[] features, int start, int end) {
+        public static double mean(KeyFeature[] features, int start, int end) {
             double sum = 0;
 
             //add up all the displacement values

@@ -42,6 +42,7 @@ import org.opencv.videoio.VideoCapture;
 import java.lang.reflect.Array;
 import java.security.Key;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CameraBaseActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2, View.OnTouchListener {
@@ -60,7 +61,10 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
-    private int frameCounter = 0;
+    private int frameCounter = 0, discards, numPts;
+
+    //break the key features into two groups based on displacement
+    private final int numGroups = 2;
 
     //Values needed for the corner detection algorithm Most likely have to tweak them to suit needs. Could also
     //let the application find out the best values by itself.
@@ -81,11 +85,16 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     MatOfByte status;
     MatOfFloat err;
     List<Point> points;
-    KeyFeature[] cornerList;
+
+
+    KeyFeature[] cornerList, cornerListSorted;
 
     List<Point> prevList, nextList, cornersFoundGoingBackList, forwardBackErrorList;
     List<Byte> byteStatus;
     ArrayList<Point> nextListCorrected;
+
+    //define a color for drawing
+    Scalar color = new Scalar(255, 0, 0);
 
     //instance of MergeSort to serve as our sorter for everything (probably could use a Singleton?)
     MergeSort mergeSort;
@@ -101,6 +110,16 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
     //the x and y displacement between the last two frames, along with the velocity calculated
     double pointX, pointY, xVel, yVel;
+
+    //initialize some doubles to hold the average position of the corners in the previous frame vs the current frame
+
+    //average position of the goodFeatures in previous frame
+    double xAvg1 = 0, yAvg1 = 0,
+            //average position of the goodFeatures in this frame
+            xAvg2 = 0, yAvg2 = 0;
+
+    private int[] breakPoints;
+
 
     public CameraBaseActivity() {
         //starting log message
@@ -337,7 +356,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         status = new MatOfByte();
         err = new MatOfFloat();
         mergeSort = new MergeSort();
-
+        discards = 0;
     }
 
     void rotate(Mat src, double angle, Mat dest) {
@@ -350,6 +369,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        discards = 0;
+
         //start the clock when this frame comes in. we'll get a split at the next frame and use elapsed time for velocity calculation
         long frameStartTime = SystemClock.elapsedRealtimeNanos();
 
@@ -496,6 +517,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
 
     //This is a Lucas-Kanade processor for a given Mat
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public Mat sparseFlow(Mat inputFrame) {
         //get the CURRENT grayscale Mat from the input camera frame
         mGray = inputFrame;
@@ -512,15 +534,6 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         //resize mGrayT image, the output image size being set to mGray.size()
         //Imgproc.resize(mGrayT, mGrayT, mGray.size());
-
-        //initialize some doubles to hold the average position of the corners in the previous frame vs the current frame
-        //average position of the goodFeatures in previous frame
-        double xAvg1 = 0;
-        double yAvg1 = 0;
-
-        //average position of the goodFeatures in this frame
-        double xAvg2 = 0;
-        double yAvg2 = 0;
 
         //if features is empty, that means we don't have any points to work with yet
         /*
@@ -558,99 +571,28 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //the algorithm, since we iterate through all of nextFeatures after it runs to extract the deltaX and deltaY
         //nextFeatures.fromArray(prevFeatures.toArray());
 
-
-
         //run the LK algorithm forwards and backwards
         lucasKanadeForwardBackward();
 
         //throw out points that don't match between last frame and this frame
         throwOutWanderingPts();
 
-
-        int numNextPts = nextListCorrected.size();
-
-        //define a color for our tracking lines
-        Scalar color = new Scalar(255, 0, 0);
-
-        //know when to log
-        boolean test = false;
+        //get the displacements of the tracked points and fill in cornerList[] appropriately (cornerList is final list of all KeyFeatures being considered for drawing)
+        populateDisplacements();
 
         //get the number of goodFeatures there were initially
         int listSize = prevList.size();
 
-        //create array of KeyFeatures the size of byteStatus list
-        cornerList = new KeyFeature[numNextPts];
+        //make copy of cornerList and remove the KeyFeatures with NULL pts (that failed forward-backward test). This copy will be used for sorting, Jenks, etc. Then
 
-        //iterate over all items in the Point Lists and get and store the displacement
-        for (int i = 0; i < numNextPts /*listSize*/; i++) {
-            //get the previous point and current point corresponding to this feature
-            Point prevPt = prevList.get(i);
-            Point nextPt = nextListCorrected.get(i);  //***CHECKKKK
-            
-            //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
-            double xDiff = prevPt.x - nextPt.x;
-            double yDiff = prevPt.y - nextPt.y;
+        //copy cornerList, remove invalid KeyFeatures from the copy, and sort
+        getSortedCornerList();
 
-            //pythagorean to get the absolute displacement magnitude
-            double dispVect = Math.sqrt(Math.pow(xDiff,2) + Math.pow(yDiff,2));
+        //separate the points into Jenks Natural Breaks groups
+        doJenksSeparation();
 
-            //now make a new KeyFeature and store the CURRENT coordinates (Point), x displacement, y displacement, and "overall" displacement magnitude
-            KeyFeature thisFeature = new KeyFeature(nextPt, xDiff, yDiff, dispVect);
-
-            //push the feature to the ArrayList of KeyFeatures
-            cornerList[i] = thisFeature;
-
-            if (prevPt != null) {
-                //Log.i(TAG, String.format("This point in prevList is %f, %f", prevList.get(i).x, prevList.get(i).y));
-                //tally up x and y values for previous frame
-                xAvg1 += prevPt.x;
-                yAvg1 += prevPt.y;
-            }
-
-            if (nextPt != null) {
-                //tally up x and y values for this frame
-                xAvg2 += nextPt.x;
-                yAvg2 += nextPt.y;
-
-                if (test==false) {
-                    //Log.i(TAG, String.format("Point originally at (%f, %f), moved to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
-                    test = true;
-                }
-            }
-        }
-
-        //sort all of the points found by the amount they've moved since the last frame
-        mergeSort.sort(cornerList, 0, cornerList.length - 1);
-
-        //print out the list of displacements(checking to see if sort worked)
-        for (int i = 0; i < cornerList.length; i++) {
-            //Log.i(TAG, String.format("Disp %f", cornerList[i].getDispVect()));
-        }
-
-        //break the key features into two groups based on displacement
-        int numGroups = 2;
-
-        /* RESERVED FOR TESTING
-        KeyFeature[] testing = new KeyFeature[1];
-        testing[0] = new KeyFeature(new Point(2,2), 0,0,3);
-         */
-
-        //Use Jenks API to sort the the displacement data into (for now, 2) groups
-        jenks = new Jenks(cornerList);
-
-        //compute the breakpoints/run the algo
-        Jenks.Breaks breaks = jenks.computeBreaks(2);
-
-        //check to make sure computing breaks was successful
-        if (breaks == null) {
-            Log.e(TAG, "Jenks breaks computation failed, returning now");
+        if (breakPoints == null) {
             return null;
-        }
-
-        int[] breakPoints = breaks.breaks;
-
-        if (breakPoints.length != 0) {
-            //Log.i(TAG, String.format("%d features in cornerList, found breakpoint at %d", cornerList.length, breakPoints[0]));
         }
 
         double[] means = new double[numGroups];
@@ -666,7 +608,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
                 //if this is the first iteration, start index is 0, end index is first int from breakPoint array
 
                 //get the mean for this grouping and store it in means array
-                means[i] = breaks.mean(cornerList, currStart, breakPoints[i]);
+                means[i] = Jenks.Breaks.mean(cornerListSorted, currStart, breakPoints[i]);
             }
         }
 
@@ -675,76 +617,15 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             Log.i(TAG, String.format("Mean of group %d is %f", i, means[i]));
         }
 
-        //GET READY TO DRAW THE DISPLACEMENT LINES - we'll treat the two groups (high and low) separately and remove any outliers within them first
-        int start = 0;
-        for (int i = 0; i < numGroups; i++) {
-            //make sure this breakpoint exists
-            if ((breakPoints.length >= i + 1)) {
-                int n;
-                Log.i(TAG, String.format("Removing outliers for group #%d", i));
+        //treating the different motion groups separately, remove outliers from the groups
+        removeOutliersWithinClusters();
 
-                //run stats on the points and get the interquartile range
-                Log.i(TAG, String.format("We have a cornerList of len %d, calling IQR(list, n: %d, start: %d)", cornerList.length, breakPoints[i] + 1, start));
-
-                float[] quartileStats = stats.IQR(cornerList, breakPoints[i] + 1, start);
-
-                if (quartileStats != null) {
-                    //Multiply the IQR by a certain number (standard is 1.5) to get the outlier cutoff deviation from Q1 and Q3
-                    float outlierCutoff = 1.5f * quartileStats[2];
-
-                    //find the non-outlier range (we really only care about the high cutoff, though
-                    float outlierLow = (float) (quartileStats[0] - outlierCutoff);
-                    float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
-
-                    for (int j = start; j <= breakPoints[i]; j++) {
-                        float thisDisp = (float) cornerList[j].getDispVect();
+        //draw the displacement lines on the image
+        drawDisplacementLines();
 
 
-                        if (thisDisp >= outlierHigh) {
-                            Log.i(TAG, String.format("Found high outlier in group %d with disp %f", i, thisDisp));
-                        }
-                    }
 
-                    //kick out the outliers by invalidating them
-                    stats.rmOutliers(cornerList, outlierHigh, 0, cornerList.length - 1);
-
-                    Log.i(TAG, String.format("Now setting start to %d", breakPoints[i] + 1));
-                    start = breakPoints[i] + 1;
-                }
-            }
-        }
-
-        //iterate over all the points in cornerList and, if they're valid, draw the displacement lines
-        for (int i = 0; i < numNextPts /*listSize*/; i++) {
-            //get the previous point and current point corresponding to this feature
-            Point prevPt = prevList.get(i);
-            Point nextPt = nextListCorrected.get(i);
-
-            //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
-            double xDiff = prevPt.x - nextPt.x;
-            double yDiff = prevPt.y - nextPt.y;
-
-            KeyFeature thisFeature = cornerList[i];
-
-            if (thisFeature.isValid() ) {
-                //modify this current pt a bit to exaggerate it so that we can see the motion lines better (can remove this if desire)
-                Point prevPtExagg = new Point(prevPt.x + xDiff, prevPt.y + yDiff); //double length of line
-
-
-                //if (prevPt!=null && nextPt!=null) {
-                if (byteStatus.get(i) == 1 && prevPtExagg != null) {
-                    //draw out a line on the current grayScale image Mat from the previous point of interest to the location it moved to in this frame
-                    Imgproc.line(mGray, nextPt, prevPtExagg, color, 3);
-                }
-
-            }
-
-            //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
-
-            //Imgproc.line(mGray, new Point(10,200), new Point(300,200), color, 3);
-        }
-
-
+        /*
         //Find which group is the fast and which is slow (for now I'm only doing two groups)
         if (means[0] >= means[1]) {
             fastMean = means[0];
@@ -795,6 +676,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
         }
         //if they don't differ greatly, don't draw the rectangle
+         */
 
         //finish calculating the X and Y averages of all points of interest for both the previous frame and this frame
         xAvg1 /= listSize;
@@ -913,28 +795,199 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
         //get the statuses (statii?) after the algorithm run
         byteStatus = status.toList();
 
-        //get size of the status list, which equals the size of the forwardBackErrorList
-        int y = byteStatus.size() - 1;
+        //get size of the status list, which equals the size of the forwardBackErrorList and the number of points we're dealing with
+        numPts = byteStatus.size() - 1;
+
+        //create array of KeyFeatures the size of byteStatus list to server as our corrected nextList
+        cornerList = new KeyFeature[numPts];
 
         //instantiate a new ArrayList for nextListCorrected to prepare for adding valid points
-        nextListCorrected = new ArrayList<>();
+        //nextListCorrected = new ArrayList<>();
 
         //REMOVE CERTAIN PTS BASED ON FORWARD-BACKWARD ERROR
 
         //Iterate through the list of differences, find max of x and y difference; if it's >= a certain val, then don't add that pt to nextList
-        for (int i = 0; i < y; i++) {
+        for (int i = 0; i < numPts; i++) {
             double xErr = forwardBackErrorList.get(i).x, yErr = forwardBackErrorList.get(i).y;
 
             double maxError = Math.max(xErr, yErr);
             Log.i(TAG, String.format("Max error found to be %f", maxError));
 
-            //If there was a lot of error between forward run of LK and backward run, throw this point out; don't add it to the nextList
-            if (maxError < 0.01) {
-                //NOW we can add this point to nextList
-                nextListCorrected.add(new Point(nextList.get(i).x, nextList.get(i).y));
+            //If there was a lot of error between forward run of LK and backward run, throw this point out; don't add it to the next features list
+            if (maxError >= 0.01) {
+                Log.i(TAG, "Throwing out point");
+
+                //set this point in the nextList to null to invalidate it
+                nextList.set(i, null);
+                discards++;
+            }
+        }
+    }
+
+    public void populateDisplacements() {
+        //iterate over all items in the Point Lists and get and store the displacement
+        for (int i = 0; i < numPts /*listSize*/; i++) {
+            //get the previous point and current point corresponding to this feature
+            Point prevPt = prevList.get(i);
+            Point nextPt = nextList.get(i);  //***CHECKKKK
+
+            //only fill in the displacement fields if this point was found to be valid in the forward-backward check
+            if (nextPt != null && prevPt != null) {
+                //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
+                double xDiff = prevPt.x - nextPt.x;
+                double yDiff = prevPt.y - nextPt.y;
+
+                //pythagorean to get the absolute displacement magnitude
+                double dispVect = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+
+                //now make a new KeyFeature and store the CURRENT coordinates (Point), x displacement, y displacement, and "overall" displacement magnitude
+                KeyFeature thisFeature = new KeyFeature(nextPt, xDiff, yDiff, dispVect);
+
+                //push the feature to the ArrayList of KeyFeatures
+                cornerList[i] = thisFeature;
+
+                //tally up x and y values for the last frame
+                xAvg1 += prevPt.x;
+                yAvg1 += prevPt.y;
+
+                //tally up x and y values for this frame
+                xAvg2 += nextPt.x;
+                yAvg2 += nextPt.y;
+            }
+        }
+    }
+
+    public void doJenksSeparation() {
+        /* RESERVED FOR TESTING
+        KeyFeature[] testing = new KeyFeature[1];
+        testing[0] = new KeyFeature(new Point(2,2), 0,0,3);
+         */
+
+        //Use Jenks API to sort the the displacement data into (for now, 2) groups
+        jenks = new Jenks(cornerListSorted);
+
+        //compute the breakpoints/run the algo
+        Jenks.Breaks breaks = jenks.computeBreaks(numGroups);
+
+        //check to make sure computing breaks was successful
+        if (breaks == null) {
+            Log.e(TAG, "Jenks breaks computation failed, returning now");
+            this.breakPoints = null;
+            return;
+        }
+
+        int[] breakPoints = breaks.breaks;
+
+        if (breakPoints.length != 0) {
+            //Log.i(TAG, String.format("%d features in cornerList, found breakpoint at %d", cornerList.length, breakPoints[0]));
+        }
+
+        this.breakPoints = breakPoints;
+    }
+
+    public void removeOutliersWithinClusters() {
+        //GET READY TO DRAW THE DISPLACEMENT LINES - we'll treat the two groups (high and low) separately and remove any outliers within them first
+        int start = 0;
+        for (int i = 0; i < numGroups; i++) {
+            //make sure this breakpoint exists
+            if ((breakPoints.length >= i + 1)) {
+                int n;
+                Log.i(TAG, String.format("Removing outliers for group #%d", i));
+
+                //run stats on the points and get the interquartile range
+                Log.i(TAG, String.format("We have a cornerList of len %d, calling IQR(list, n: %d, start: %d)", cornerList.length, breakPoints[i] + 1, start));
+
+                float[] quartileStats = stats.IQR(cornerListSorted, breakPoints[i] + 1, start);
+
+                if (quartileStats != null) {
+                    //Multiply the IQR by a certain number (standard is 1.5) to get the outlier cutoff deviation from Q1 and Q3
+                    float outlierCutoff = 1.5f * quartileStats[2];
+
+                    //find the non-outlier range (we really only care about the high cutoff, though
+                    float outlierLow = (float) (quartileStats[0] - outlierCutoff);
+                    float outlierHigh = (float) (quartileStats[1] + outlierCutoff);
+
+                    for (int j = start; j <= breakPoints[i]; j++) {
+                        float thisDisp = (float) cornerListSorted[j].getDispVect();
+
+
+                        if (thisDisp >= outlierHigh) {
+                            Log.i(TAG, String.format("Found high outlier in group %d with disp %f", i, thisDisp));
+                        }
+                    }
+
+                    //kick out the outliers by invalidating them (setting valid field to 0)
+                    stats.rmOutliers(cornerListSorted, outlierHigh, 0, cornerListSorted.length - 1);
+
+                    Log.i(TAG, String.format("Now setting start to %d", breakPoints[i] + 1));
+                    start = breakPoints[i] + 1;
+                }
+            }
+        }
+    }
+
+    public void drawDisplacementLines() {
+        //iterate over all the points in cornerList and, if they're valid, draw the displacement lines
+        for (int i = 0; i < numPts /*listSize*/; i++) {
+            //get the previous point and current point corresponding to this feature
+            Point prevPt = prevList.get(i);
+            Point nextPt = nextList.get(i);
+
+            if (nextPt!=null && prevPt!=null) {
+                //calculate the x and y displacement for this pt. Remember the origin is top right, not bottom left
+                double xDiff = prevPt.x - nextPt.x;
+                double yDiff = prevPt.y - nextPt.y;
+
+                //get the KeyFeature corresponding to nextPt from the cornerList so that we can make sure it's valid
+                KeyFeature thisFeature = cornerList[i];
+
+                //a valid field of 0 means this point was an outlier. A getPt result of null means this point failed the forward-backward test
+                if (thisFeature.isValid() && thisFeature.getPt() != null) {
+                    //modify this current pt a bit to exaggerate it so that we can see the motion lines better (can remove this if desire)
+                    Point prevPtExagg = new Point(prevPt.x + xDiff, prevPt.y + yDiff); //double length of line
+
+
+                    //if (prevPt!=null && nextPt!=null) {
+                    if (byteStatus.get(i) == 1) {
+                        //draw out a line on the current grayScale image Mat from the previous point of interest to the location it moved to in this frame
+                        Imgproc.line(mGray, nextPt, prevPtExagg, color, 3);
+                    }
+
+                }
+            }
+
+            //Log.i(TAG, String.format("Line from (%f, %f) to (%f, %f)", prevList.get(i).x, prevList.get(i).y, nextList.get(i).x, nextList.get(i).y));
+
+            //Imgproc.line(mGray, new Point(10,200), new Point(300,200), color, 3);
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N) //require nougat
+    public void getSortedCornerList() {
+        //make a copy of the original cornerList
+        cornerListSorted = new KeyFeature[cornerList.length - discards];
+
+        Log.i(TAG, "Corner list pre-sorting");
+        for (KeyFeature keyFeature : cornerList) {
+            if (keyFeature == null) {
+                Log.i(TAG, "This slot of cornerList NULL");
+            } else {
+                Log.i(TAG, String.format("This slot of cornerList: %f, %f", keyFeature.getPt().x, keyFeature.getPt().y));
+            }
+        }
+
+        cornerListSorted = Arrays.stream(cornerList).filter(x -> !(x==null)).toArray(KeyFeature[]::new);
+
+        //sort all of the points found by the amount they've moved since the last frame
+        mergeSort.sort(cornerListSorted, 0, cornerList.length - discards - 1);
+
+        Log.i(TAG, "Corner list post-sorting and removing nulls");
+        for (int i=0; i<cornerList.length - discards; i++) {
+            if (cornerListSorted[i] == null) {
+                Log.i(TAG, "This slot of cornerListSorted NULL");
             }
             else {
-                Log.i(TAG, "Throwing out point");
+                Log.i(TAG, String.format("This slot of cornerList: %f, %f", cornerListSorted[i].getPt().x, cornerListSorted[i].getPt().y));
             }
         }
     }
