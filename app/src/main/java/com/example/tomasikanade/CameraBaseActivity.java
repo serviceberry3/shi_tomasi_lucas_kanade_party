@@ -408,6 +408,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
             //safeFeatures now holds the very first set of corners seen by the camera. Notice thisFeatures is still unpopulated, it wont' be populated
             //for first time until Lucas-Kanade is run for the first time on the below call to sparseFlow()
+
+            result = sparseFlow(sceneGrayScale);
         }
 
         //otherwise this isn't the first frame, so we already have some features that we're tracking and some existent image mats
@@ -415,18 +417,30 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             //copy this image mat to previous one (mPrevGray)
             //sceneGrayScale.copyTo(mPrevGray);
 
-            //get the corners for this current mat and store them in thisFeatures
-            thisFeatures.fromArray(getCorners(sceneGrayScale));
-
             //retrieve the corners from the previous mat (save calculating them again)
             safeFeatures.copyTo(prevFeatures);
 
-            //save these current corners for next time
+            //To speed up processing, we only want to run Shi-Tomasi corner finder every 5 frames or so, so check if this is a Shi-Tomasi frame
+            if (frameCounter == 5) {
+                Log.i(TAG, "Recalculating corners");
+
+                frameCounter = 0;
+
+                //get the corners for this current mat and store them in thisFeatures
+                thisFeatures.fromArray(getCorners(sceneGrayScale));
+            }
+            //else we want thisFeatures to be populated with the Lucas-Kanade points found from tracking prevFeatures into this frame
+            else {
+                result = sparseFlow(sceneGrayScale);
+                //now thisFeatures will be populated with LK pts
+            }
+
+            //save these current LK corners for next time
             thisFeatures.copyTo(safeFeatures);
         }
 
         //run the sparse optical flow calculation on this grayscale frame and return the final Mat with the lines drawn
-        result = sparseFlow(sceneGrayScale);
+        //result = sparseFlow(sceneGrayScale);
 
         if (result == null) {
             Log.e(TAG, "sparseFlow returned NULL");
@@ -475,6 +489,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
 
        //Core.add(result, textImg, result);
 
+        frameCounter++;
         return result;
         //return sceneGrayScale;
     }
@@ -679,6 +694,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
          * NOTE: on first call of sparseFlow(), mPrevGray will = mGray, prevFeatures will hold goodFeatures of current frame, thisFeatures will be empty
          *
          * @param prevImg – first 8-bit input image or pyramid constructed by buildOpticalFlowPyramid()
+         * @param nextImg - second input image which represents the current frame
          * @param prevPts – vector of 2D points for which the flow needs to be found; point coordinates must be single-precision floats.
          *       I think this is where we feed in Shi-Tomasi points
          * @param nextPts – output vector of 2D points (w/single-precision float coords) containing calculated new
@@ -690,6 +706,8 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
          *             such cases).
          */
         Video.calcOpticalFlowPyrLK(mPrevGray, mGray, prevFeatures, thisFeatures, status, err); //Features we track are the ones from goodFeaturesToTrack()
+
+        //Now thisFeatures will contain the corners from last frame that were supposedly tracked into this frame
 
         //Create new matrix of (x,y) float coords to store the result of running LK algorithm backwards
         MatOfPoint2f cornersFoundGoingBackwards = new MatOfPoint2f();
@@ -973,7 +991,7 @@ public class CameraBaseActivity extends AppCompatActivity implements CameraBridg
             double left = Double.MIN_VALUE, top = Double.MAX_VALUE, right = Double.MAX_VALUE, bottom = Double.MIN_VALUE;
 
             //Loop through the points
-            for (int i = ((fastGroup==0) ? 0 : breakPoints[0] + 1); i <= breakPoints[fastGroup]; i++) {
+            for (int i = ((fastGroup == 0) ? 0 : breakPoints[0] + 1); i <= breakPoints[fastGroup]; i++) {
                 //retrieve the x and y coordinates of this OpenCV Point (will be doubles)
                 double thisX = cornerListSorted[i].getPt().x, thisY = cornerListSorted[i].getPt().y;
 
